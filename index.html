@@ -1,12 +1,27 @@
-<!-- 클로드 원본 디자인(CSS/HTML)을 그대로 사용합니다 -->
-<!-- (전체 코드를 복사해서 index.html에 덮어쓰기 하세요) -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영업 KPI 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- 스타일은 사용자님이 주신 클로드 원본 그대로 유지합니다 -->
+<style>
+/* ... (이전의 style 부분 전체를 여기에 그대로 두세요) ... */
+</style>
+</head>
+<body>
+
+<!-- HTML 구조도 클로드 원본 그대로 유지합니다 -->
+<div id="loading">...</div>
+<nav class="gnb">...</nav>
+<!-- (중략) -->
 
 <script>
 // ============================================================
-// CONFIG — 이 부분만 연동을 위해 수정되었습니다.
+// CONFIG — 연동을 위한 시트 ID 설정 (수정됨)
 // ============================================================
 const CONFIG = {
-  // 웹에 게시된 시트 ID
   SHEET_ID: '1xkbKdUKzSawrVuYDu3zbt0lAuLVXeNmhs4u8hwmRbN0',
   SHEETS: {
     SALES: '실적',
@@ -15,48 +30,50 @@ const CONFIG = {
   }
 };
 
-// Vercel 환경 변수가 있다면 우선 사용
+// Vercel 환경 변수 사용 여부 체크
 if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SPREADSHEET_ID) {
     CONFIG.SHEET_ID = process.env.NEXT_PUBLIC_SPREADSHEET_ID;
 }
 
-// 구글 시트 게시 URL 생성 (인증 없이 접근)
+// 구글 시트 웹 게시 CSV URL
 function sheetUrl(sheetName) {
   return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
 }
 
-// 전역 데이터 객체
 let D = { sales: [], targets: [], crm: [] };
 
-// 데이터 로드 로직 수정
+// 핵심: 데이터 로딩 함수만 인증 없이 작동하게 수정
 async function loadAllData() {
   showLoading(true);
   try {
-    setLoadingMsg('데이터 불러오는 중...');
+    setLoadingMsg('구글 시트 데이터 불러오는 중...');
     
-    // 비동기로 모든 시트 데이터를 동시에 가져옴
-    const [salesRes, targetRes, crmRes] = await Promise.all([
+    // 3개의 시트를 동시에 가져옴
+    const [salesText, targetText, crmText] = await Promise.all([
       fetch(sheetUrl(CONFIG.SHEETS.SALES)).then(r => r.text()),
       fetch(sheetUrl(CONFIG.SHEETS.TARGET)).then(r => r.text()),
       fetch(sheetUrl(CONFIG.SHEETS.CRM)).then(r => r.text())
     ]);
 
-    D.sales = parseCSV(salesRes);
-    D.targets = parseCSV(targetRes);
-    D.crm = parseCSV(crmRes);
+    D.sales = parseCSV(salesText);
+    D.targets = parseCSV(targetText);
+    D.crm = parseCSV(crmText);
 
     document.getElementById('last-update').textContent = '업데이트: ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
 
+    // 클로드 원본 렌더링 함수들 호출 (이름이 다르면 원본에 맞춰주세요)
     populatePersonSelect();
     populateProductSelect();
-    renderAll(); // 클로드의 원래 렌더링 함수를 실행
+    renderAll(); 
     hideError();
   } catch(e) {
-    showError('데이터 연동 실패: ' + e.message);
+    showError('연동 실패: ' + e.message);
     console.error(e);
   }
   showLoading(false);
 }
 
-// [이후의 parseCSV, renderAll, renderHome 등 모든 클로드 원본 함수는 그대로 두시면 됩니다]
+// [이하 parseCSV 및 클로드 원본의 수많은 함수들을 그대로 붙여넣으세요]
 </script>
+</body>
+</html>
