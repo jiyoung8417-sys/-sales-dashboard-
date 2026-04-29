@@ -204,6 +204,99 @@ tr:hover td{background:var(--bg)}
 
 /* OVERDUE dot on pipe */
 .od-dot{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:1px 6px;border-radius:20px;background:#FCEBEB;color:#A32D2D;font-weight:700;margin-left:4px}
+
+/* =====================================================
+   MOBILE RESPONSIVE — 768px 이하
+===================================================== */
+@media(max-width:768px){
+  /* GNB 모바일 */
+  .gnb{padding:0 12px;height:48px;flex-wrap:nowrap}
+  .gnb-logo{font-size:13px;margin-right:0;padding-right:0;border-right:none}
+  .gnb-tabs{display:none} /* 탭은 하단 네비로 대체 */
+  .gnb-clock,.gnb-upd{display:none}
+  .btn-ref{font-size:10px;padding:0 8px;height:26px}
+
+  /* 하단 탭 네비게이션 */
+  .bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;
+    background:#fff;border-top:.5px solid var(--b2);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .bn-tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    padding:8px 4px 6px;cursor:pointer;gap:3px;
+    font-size:9px;color:var(--t3);transition:color .15s;
+    border:none;background:transparent;
+  }
+  .bn-tab.active{color:var(--blue)}
+  .bn-icon{font-size:18px;line-height:1}
+
+  /* 월 필터바 */
+  .month-bar{
+    padding:6px 12px;top:48px;
+    overflow-x:auto;flex-wrap:nowrap;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .month-bar::-webkit-scrollbar{display:none}
+  .mf-btn{font-size:10px;padding:3px 9px;white-space:nowrap;flex-shrink:0}
+
+  /* 페이지 패딩 + 하단 네비 여백 */
+  .page{padding:12px 12px 80px}
+
+  /* 그리드 → 1열 */
+  .g2,.g3,.g4,.nc-wrap{grid-template-columns:1fr;gap:10px}
+
+  /* 카드 */
+  .card{padding:14px 14px}
+  .kpi-v{font-size:24px}
+  .kpi-v-md{font-size:18px}
+
+  /* 차트 높이 */
+  .h260{height:200px}
+  .h220{height:180px}
+  .h180{height:150px}
+  .h140{height:120px}
+
+  /* 파이프라인 카드 → 1열 */
+  .cards-grid{grid-template-columns:1fr}
+
+  /* 미니 합계 3열 */
+  .msum{grid-template-columns:repeat(3,1fr)}
+
+  /* 검색박스 */
+  .srow{flex-direction:column}
+  .si,.ss{width:100%;min-width:unset}
+
+  /* 신문 레이아웃 */
+  .news-wrap{grid-template-columns:1fr}
+  .news-grid{grid-template-columns:1fr}
+  .news-article{border-right:none}
+  .news-masthead{font-size:16px;letter-spacing:1px}
+  .rpt-kpi-g{grid-template-columns:repeat(3,1fr)}
+
+  /* 그룹 탭 */
+  .gtabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .gtab{white-space:nowrap;flex-shrink:0}
+
+  /* 필터 rows */
+  .flt-row{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .flt-btn{white-space:nowrap;flex-shrink:0}
+
+  /* 테이블 스크롤 */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* 단계별 현황 */
+  #grp-body > .card:last-child > div[style*="grid"]{grid-template-columns:repeat(3,1fr)!important}
+}
+
+@media(max-width:480px){
+  .kpi-v{font-size:20px}
+  .msum{grid-template-columns:repeat(3,1fr)}
+  .mc-v{font-size:15px}
+  .rpt-kpi-g{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
@@ -214,6 +307,25 @@ tr:hover td{background:var(--bg)}
   <div class="load-msg" id="lmsg">데이터를 불러오는 중...</div>
 </div>
 <div class="err-banner" id="err"></div>
+
+<!-- 하단 모바일 네비게이션 -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bn-tab active" onclick="goPageM('home',this)">
+    <span class="bn-icon">🏠</span>홈
+  </button>
+  <button class="bn-tab" onclick="goPageM('sales',this)">
+    <span class="bn-icon">📊</span>매출
+  </button>
+  <button class="bn-tab" onclick="goPageM('pipeline',this)">
+    <span class="bn-icon">🔁</span>파이프라인
+  </button>
+  <button class="bn-tab" onclick="goPageM('group',this)">
+    <span class="bn-icon">👥</span>그룹별
+  </button>
+  <button class="bn-tab" onclick="goPageM('report',this)">
+    <span class="bn-icon">📰</span>주간보고
+  </button>
+</nav>
 
 <!-- GNB -->
 <nav class="gnb">
@@ -1219,6 +1331,26 @@ function goPage(id,el){
   document.querySelectorAll('.gnb-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
+  // 하단 네비도 동기화
+  document.querySelectorAll('.bn-tab').forEach((b,i)=>{
+    const ids=['home','sales','pipeline','group','report'];
+    b.classList.toggle('active', ids[i]===id);
+  });
+  setTimeout(()=>renderPage(id),30);
+}
+
+// 모바일 하단 탭 전환
+function goPageM(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.gnb-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.bn-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  // GNB 탭도 동기화 (데스크탑)
+  const gnbTabs=document.querySelectorAll('.gnb-tab');
+  const ids=['home','sales','pipeline','group','report'];
+  const idx=ids.indexOf(id);
+  if(gnbTabs[idx]) gnbTabs[idx].classList.add('active');
   setTimeout(()=>renderPage(id),30);
 }
 
