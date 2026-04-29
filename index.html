@@ -790,7 +790,7 @@ function drawTrendChart(cur){
   ms.forEach(m=>{
     const mS=sumS('전체','전체',m);
     const mFC=sumFC('전체','전체',m);
-    const mT=getT('전체','전재',m)||getT('전체','전체',m);
+    const mT=getT('전체','전체',m);
     cumT+=mT; tD.push(cumT||null);
 
     if(m<=cur){
@@ -1137,7 +1137,7 @@ function renderReport(){
   const articles=[
     {
       kicker:'매출 실적',
-      headline:`${sm}월 달성률 ${mR}% — 목표 ${mR>=100?'초과 달성':'진행 중'!}`,
+      headline:`${sm}월 달성률 ${mR}% — 목표 ${n(mR)>=100?'초과 달성':'진행 중'}`,
       body:`${sm}월 누적 실적은 ${fmt(mS)}으로 집계됐다. 월 목표 ${fmt(mT)} 대비 달성률은 ${mR}%를 기록했다.${mFC>0?' 예상수주 '+fmt(mFC)+' 추가 시 달성률이 더 높아질 것으로 기대된다.':''}`
     },
     {
