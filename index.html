@@ -3,112 +3,181 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>영업 KPI 대시보드</title>
+<title>통합 영업 KPI 대시보드 v2.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-/* 클로드 원본 CSS 스타일 (절대 수정 금지) */
 :root {
-  --bg: #f5f5f3; --card: #ffffff; --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
-  --text1: #1a1a18; --text2: #5a5955; --text3: #9a9893; --blue: #378ADD;
-  --teal: #1D9E75; --amber: #EF9F27; --red: #E24B4A; --purple: #7F77DD;
-  --radius: 12px; --radius-sm: 8px;
+  --bg: #f8f9fa; --card: #ffffff; --border: rgba(0,0,0,0.06); 
+  --text1: #111827; --text2: #4b5563; --text3: #9ca3af;
+  --blue: #2563eb; --teal: #059669; --amber: #d97706; --red: #dc2626;
+  --radius: 12px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--text1); min-height: 100vh; }
-.gnb { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 0.5px solid var(--border2); display: flex; align-items: center; padding: 0 24px; height: 52px; }
-.gnb-logo { font-size: 14px; font-weight: 600; color: var(--text1); margin-right: 28px; padding-right: 20px; border-right: 1px solid var(--border); }
-.gnb-tabs { display: flex; flex: 1; }
-.gnb-tab { height: 52px; padding: 0 18px; font-size: 13px; color: var(--text2); cursor: pointer; display: flex; align-items: center; border-bottom: 2px solid transparent; transition: all .15s; }
-.gnb-tab.active { color: var(--text1); border-bottom-color: var(--text1); font-weight: 500; }
-.page { display: none; padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
-.page.active { display: block; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-.card { background: var(--card); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
-.kpi-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
-.kpi-val { font-size: 28px; font-weight: 600; color: var(--text1); line-height: 1; }
-.progress-bar { height: 5px; background: var(--bg); border-radius: 3px; margin-top: 10px; overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width .6s; }
-/* (이하 클로드 원본 스타일 유지...) */
+body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text1); line-height: 1.5; }
+
+/* GNB */
+.gnb { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; height: 60px; justify-content: space-between; }
+.gnb-left { display: flex; align-items: center; gap: 30px; }
+.logo { font-size: 18px; font-weight: 800; color: var(--blue); letter-spacing: -0.5px; }
+.tabs { display: flex; gap: 8px; }
+.tab { padding: 8px 16px; font-size: 14px; color: var(--text2); cursor: pointer; border-radius: 8px; transition: 0.2s; font-weight: 500; }
+.tab:hover { background: #f3f4f6; }
+.tab.active { background: #eff6ff; color: var(--blue); }
+.gnb-right { display: flex; align-items: center; gap: 15px; font-size: 13px; color: var(--text3); }
+.btn-refresh { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: #fff; cursor: pointer; font-size: 12px; }
+
+/* Layout */
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+.page { display: none; }
+.page.active { display: block; animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Cards */
+.grid-top { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
+.kpi-card { background: var(--card); padding: 24px; border-radius: var(--radius); border: 1px solid var(--border); position: relative; overflow: hidden; }
+.kpi-card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--blue); }
+.kpi-label { font-size: 13px; color: var(--text2); font-weight: 600; margin-bottom: 10px; display: block; }
+.kpi-value { font-size: 28px; font-weight: 800; margin-bottom: 8px; color: var(--text1); }
+.kpi-meta { font-size: 12px; color: var(--text3); }
+
+/* Main Content Grid */
+.main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 24px; }
+.chart-card { background: var(--card); padding: 24px; border-radius: var(--radius); border: 1px solid var(--border); }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.chart-title { font-size: 16px; font-weight: 700; }
+
+/* Tables/Lists */
+.rank-list { display: flex; flex-direction: column; gap: 12px; }
+.rank-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+.rank-name { font-size: 14px; font-weight: 500; }
+.rank-val { font-size: 14px; font-weight: 700; color: var(--teal); }
+
+/* Loading */
+#loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.spinner { width: 40px; height: 40px; border: 4px solid #f3f4f6; border-top-color: var(--blue); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<div id="loading" style="position:fixed; inset:0; background:#fff; z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-  <div style="width:36px; height:36px; border:3px solid #eee; border-top-color:#378ADD; border-radius:50%; animation:spin .8s linear infinite;"></div>
-  <p style="margin-top:10px; font-size:14px; color:#5a5955;">데이터 분석 중...</p>
+<div id="loader">
+  <div class="spinner"></div>
+  <p style="margin-top:20px; font-weight:600; color:var(--text2);">영업 데이터를 실시간 동기화 중입니다...</p>
 </div>
 
 <nav class="gnb">
-  <div class="gnb-logo">영업 KPI</div>
-  <div class="gnb-tabs">
-    <div class="gnb-tab active" onclick="switchPage('home',this)">홈</div>
-    <div class="gnb-tab" onclick="switchPage('sales',this)">매출 현황</div>
-    <div class="gnb-tab" onclick="switchPage('pipeline',this)">CRM 파이프라인</div>
-    <div class="gnb-tab" onclick="switchPage('group',this)">그룹별 현황</div>
-    <div class="gnb-tab" onclick="switchPage('report',this)">주간 보고</div>
+  <div class="gnb-left">
+    <div class="logo">SALES INTELLIGENCE</div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('home', this)">홈 대시보드</div>
+      <div class="tab" onclick="switchTab('sales', this)">매출 상세</div>
+      <div class="tab" onclick="switchTab('crm', this)">파이프라인</div>
+    </div>
   </div>
-  <button onclick="loadAllData()" style="padding:4px 10px; font-size:12px; cursor:pointer;">↻ 새로고침</button>
+  <div class="gnb-right">
+    <span id="update-time">마지막 업데이트: -</span>
+    <button class="btn-refresh" onclick="init()">↻ 데이터 갱신</button>
+  </div>
 </nav>
 
-<div class="page active" id="page-home">
-  <div class="grid-3">
-    <div class="card">
-      <div class="kpi-label">연간 누적 실적</div>
-      <div class="kpi-val" id="h-total">-</div>
-      <div class="progress-bar"><div class="progress-fill" id="h-progress" style="width:0%"></div></div>
+<div class="container">
+  <!-- HOME PAGE -->
+  <div id="page-home" class="page active">
+    <div class="grid-top">
+      <div class="kpi-card">
+        <span class="kpi-label">연간 실적 (누계)</span>
+        <div class="kpi-value" id="kpi-total">-</div>
+        <div class="kpi-meta" id="kpi-target-diff">목표 대비 -</div>
+      </div>
+      <div class="kpi-card" style="--blue: var(--amber)">
+        <span class="kpi-label">예상수주 합계</span>
+        <div class="kpi-value" id="kpi-forecast">-</div>
+        <div class="kpi-meta" id="kpi-forecast-count">진행 중인 기회 -건</div>
+      </div>
+      <div class="kpi-card" style="--blue: var(--teal)">
+        <span class="kpi-label">당월 목표 달성률</span>
+        <div class="kpi-value" id="kpi-month-rate">-%</div>
+        <div class="kpi-meta" id="kpi-month-val">실적 - / 목표 -</div>
+      </div>
+      <div class="kpi-card" style="--blue: #8b5cf6">
+        <span class="kpi-label">CRM 성공률</span>
+        <div class="kpi-value" id="kpi-crm-rate">-%</div>
+        <div class="kpi-meta" id="kpi-crm-info">전체 150건 기준</div>
+      </div>
     </div>
-    <div class="card">
-      <div class="kpi-label">연간 목표 달성률</div>
-      <div class="kpi-val" id="h-rate">-%</div>
+
+    <div class="main-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">월별 실적 추이 (실적 + 예상수주 누적)</div>
+          <div id="chart-legend" style="font-size:12px; color:var(--text3);">● 목표  ● 실적  ● 예상</div>
+        </div>
+        <div style="height: 350px;"><canvas id="chart-main"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">신규 수주 TOP 5</div></div>
+        <div class="rank-list" id="list-top-new"></div>
+        <div class="chart-header" style="margin-top:24px;"><div class="chart-title">해지 주의 TOP 3</div></div>
+        <div class="rank-list" id="list-top-cancel"></div>
+      </div>
     </div>
-    <div class="card">
-      <div class="kpi-label">CRM 진행 건수</div>
-      <div class="kpi-val" id="h-crm-count">-건</div>
+
+    <div class="main-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="chart-card">
+        <div class="chart-title" style="margin-bottom:20px;">매출구분별 현황 (누적)</div>
+        <div style="height: 250px;"><canvas id="chart-div"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title" style="margin-bottom:20px;">CRM 파이프라인 단계</div>
+        <div id="list-crm-steps" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
     </div>
   </div>
-  <!-- 클로드 원본의 차트와 리스트가 들어갈 자리 -->
-  <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-top:16px;">
-    <div class="card">
-      <div style="font-weight:600; margin-bottom:15px;">월별 실적 추이</div>
-      <div style="height:300px;"><canvas id="chart-trend"></canvas></div>
-    </div>
-    <div class="card">
-      <div style="font-weight:600; margin-bottom:15px;">실적 랭킹</div>
-      <div id="rank-list" style="font-size:13px;"></div>
+
+  <div id="page-sales" class="page">
+    <div class="chart-card">
+      <div class="chart-title">데이터를 불러오는 중입니다...</div>
     </div>
   </div>
 </div>
 
 <script>
-const CONFIG = {
-  SHEET_ID: '1xkbKdUKzSawrVuYDu3zbt0lAuLVXeNmhs4u8hwmRbN0',
-  SHEETS: { SALES: '실적', TARGET: '목표', CRM: 'CRM' }
-};
+const SPREADSHEET_ID = '1xkbKdUKzSawrVuYDu3zbt0lAuLVXeNmhs4u8hwmRbN0';
+const SHEETS = { SALES: '실적', TARGET: '목표', CRM: 'CRM' };
 
-function sheetUrl(sheetName) {
-  return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+function getSheetUrl(name) {
+  return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;
 }
 
-let D = { sales: [], targets: [], crm: [] };
+let DATA = { sales: [], target: [], crm: [] };
 let charts = {};
 
-async function loadAllData() {
-  document.getElementById('loading').style.display = 'flex';
+async function init() {
+  document.getElementById('loader').style.display = 'flex';
   try {
-    const [s, t, c] = await Promise.all([
-      fetch(sheetUrl(CONFIG.SHEETS.SALES)).then(r => r.text()),
-      fetch(sheetUrl(CONFIG.SHEETS.TARGET)).then(r => r.text()),
-      fetch(sheetUrl(CONFIG.SHEETS.CRM)).then(r => r.text())
+    const [sRaw, tRaw, cRaw] = await Promise.all([
+      fetch(getSheetUrl(SHEETS.SALES)).then(r => r.text()),
+      fetch(getSheetUrl(SHEETS.TARGET)).then(r => r.text()),
+      fetch(getSheetUrl(SHEETS.CRM)).then(r => r.text())
     ]);
-    D.sales = parseCSV(s); D.targets = parseCSV(t); D.crm = parseCSV(c);
-    renderHome();
-  } catch (e) { alert("연동 오류: " + e.message); }
-  finally { document.getElementById('loading').style.display = 'none'; }
+
+    DATA.sales = parseCSV(sRaw);
+    DATA.target = parseCSV(tRaw);
+    DATA.crm = parseCSV(cRaw);
+
+    renderDashboard();
+    document.getElementById('update-time').textContent = '마지막 업데이트: ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    alert('데이터 동기화 실패: 시트 권한을 확인하세요.');
+    console.error(e);
+  } finally {
+    document.getElementById('loader').style.display = 'none';
+  }
 }
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
-  const headers = lines[0].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(h => h.replace(/"/g, '').trim());
+  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
   return lines.slice(1).map(line => {
     const vals = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
     const obj = {};
@@ -117,48 +186,108 @@ function parseCSV(text) {
   });
 }
 
-function renderHome() {
-  const n = (v) => parseFloat((v+'').replace(/,/g,'')) || 0;
-  const totalSales = D.sales.reduce((s,r) => s + n(r['금액']), 0);
-  const totalTarget = D.targets.reduce((s,r) => s + n(r['목표금액']), 0);
-  
-  document.getElementById('h-total').textContent = totalSales.toLocaleString() + '원';
-  const rate = totalTarget > 0 ? (totalSales/totalTarget*100).toFixed(1) : 0;
-  document.getElementById('h-rate').textContent = rate + '%';
-  document.getElementById('h-progress').style.width = Math.min(rate, 100) + '%';
-  document.getElementById('h-crm-count').textContent = D.crm.length + '건';
+function n(v) { return parseFloat((v || '0').replace(/,/g, '')) || 0; }
+function f(v) { 
+  if (v >= 100000000) return (v / 100000000).toFixed(1) + '억';
+  if (v >= 10000) return (v / 10000).toLocaleString() + '만';
+  return v.toLocaleString();
+}
 
-  // 랭킹 리스트
-  const top5 = [...D.sales].sort((a,b) => n(b['금액']) - n(a['금액'])).slice(0,5);
-  document.getElementById('rank-list').innerHTML = top5.map((r,i) => `
-    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:0.5px solid #eee;">
-      <span>${i+1}. ${r['고객사']}</span>
-      <strong>${Math.round(n(r['금액'])/10000).toLocaleString()}만</strong>
+function renderDashboard() {
+  const curMonth = new Date().getMonth() + 1;
+
+  // 1. KPI 계산
+  const totalActual = DATA.sales.reduce((s, r) => s + n(r['금액']), 0);
+  const totalForecast = DATA.sales.reduce((s, r) => s + n(r['예상수주']), 0);
+  const totalTarget = DATA.target.reduce((s, r) => s + n(r['목표금액']), 0);
+  
+  document.getElementById('kpi-total').textContent = f(totalActual);
+  document.getElementById('kpi-forecast').textContent = f(totalForecast);
+  document.getElementById('kpi-target-diff').textContent = `연간 목표 ${f(totalTarget)} 대비 ${(totalActual/totalTarget*100).toFixed(1)}%`;
+  document.getElementById('kpi-forecast-count').textContent = `실적+예상수주 합계: ${f(totalActual + totalForecast)}`;
+
+  const mActual = DATA.sales.filter(r => parseInt(r['매출월']) === curMonth).reduce((s,r) => s + n(r['금액']), 0);
+  const mTarget = DATA.target.filter(r => parseInt(r['매출월']) === curMonth).reduce((s,r) => s + n(r['목표금액']), 0);
+  document.getElementById('kpi-month-rate').textContent = mTarget > 0 ? (mActual/mTarget*100).toFixed(1) + '%' : '-';
+  document.getElementById('kpi-month-val').textContent = `${curMonth}월 실적 ${f(mActual)} / 목표 ${f(mTarget)}`;
+
+  // 2. 랭킹 리스트
+  const topNew = [...DATA.sales].filter(r => n(r['금액']) > 0).sort((a,b) => n(b['금액']) - n(a['금액'])).slice(0, 5);
+  document.getElementById('list-top-new').innerHTML = topNew.map((r, i) => `
+    <div class="rank-item">
+      <span class="rank-name">${i+1}. ${r['고객사']}</span>
+      <span class="rank-val">${f(n(r['금액']))}</span>
     </div>`).join('');
 
-  drawChart();
+  const topCancel = [...DATA.sales].filter(r => r['해지'] === '해지').sort((a,b) => n(b['금액']) - n(a['금액'])).slice(0, 3);
+  document.getElementById('list-top-cancel').innerHTML = topCancel.map(r => `
+    <div class="rank-item">
+      <span class="rank-name" style="color:var(--red)">${r['고객사']}</span>
+      <span class="rank-val" style="color:var(--red)">-${f(n(r['금액']))}</span>
+    </div>`).join('');
+
+  // 3. 차트 - 월별 추이 (실적 + 예상수주 누적)
+  renderTrendChart(totalTarget);
+  
+  // 4. 파이프라인
+  const steps = ['기회인지','제안','견적','계약','개통완료'];
+  document.getElementById('list-crm-steps').innerHTML = steps.map(s => {
+    const count = DATA.crm.filter(r => r['단계'] === s).length;
+    return `<div><div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span>${s}</span><span>${count}건</span></div>
+            <div style="height:8px; background:#f3f4f6; border-radius:4px;"><div style="width:${(count/DATA.crm.length*100)}%; height:100%; background:var(--blue); border-radius:4px;"></div></div></div>`;
+  }).join('');
 }
 
-function drawChart() {
-    const ctx = document.getElementById('chart-trend').getContext('2d');
-    if(charts.trend) charts.trend.destroy();
-    charts.trend = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
-            datasets: [{ label: '실적 추이', data: [/* 월별 집계 데이터... */], borderColor: '#378ADD', tension: 0.3, fill: true, backgroundColor: '#378ADD11' }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
+function renderTrendChart() {
+  const ctx = document.getElementById('chart-main').getContext('2d');
+  if (charts.main) charts.main.destroy();
+
+  const labels = Array.from({length:12}, (_, i) => (i+1)+'월');
+  const targetData = [], actualData = [], forecastData = [];
+  let cumT = 0, cumA = 0, cumF = 0;
+
+  for (let m=1; m<=12; m++) {
+    cumT += DATA.target.filter(r => parseInt(r['매출월']) === m).reduce((s,r) => s + n(r['목표금액']), 0);
+    const mActual = DATA.sales.filter(r => parseInt(r['매출월']) === m).reduce((s,r) => s + n(r['금액']), 0);
+    const mForecast = DATA.sales.filter(r => parseInt(r['매출월']) === m).reduce((s,r) => s + n(r['예상수주']), 0);
+    
+    cumA += mActual;
+    cumF += (mActual + mForecast);
+    
+    targetData.push(cumT);
+    actualData.push(m <= new Date().getMonth()+1 ? cumA : null);
+    forecastData.push(cumF);
+  }
+
+  charts.main = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: '누적 목표', data: targetData, borderColor: '#e5e7eb', borderDash: [5,5], fill: false, tension: 0.3 },
+        { label: '누적 실적', data: actualData, borderColor: '#2563eb', backgroundColor: '#2563eb', fill: false, tension: 0.3, borderWidth: 3 },
+        { label: '실적 + 예상수주', data: forecastData, borderColor: '#fbbf24', borderDash: [2,2], fill: false, tension: 0.3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { 
+        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { callback: v => f(v) } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
 }
 
-function switchPage(id, el) {
-    document.querySelectorAll('.gnb-tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('page-' + id).classList.add('active');
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-loadAllData();
+init();
 </script>
 </body>
 </html>
