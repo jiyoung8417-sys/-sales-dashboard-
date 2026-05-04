@@ -215,6 +215,7 @@ tr:hover td{background:var(--bg)}
 /* GROUP PAGE */
 .gtabs{display:flex;gap:6px;margin-bottom:14px}
 .gtab{font-size:12px;padding:5px 14px;border:.5px solid var(--b2);border-radius:20px;cursor:pointer;background:transparent;color:var(--t2);transition:all .12s}
+.gtab[data-grp="0"].active{background:var(--t1);color:#fff;border-color:var(--t1)}
 .gtab[data-grp="1"].active{background:var(--grp1);color:#fff;border-color:var(--grp1)}
 .gtab[data-grp="2"].active{background:var(--grp2);color:#fff;border-color:var(--grp2)}
 .gtab[data-grp="3"].active{background:var(--grp3);color:#fff;border-color:var(--grp3)}
@@ -297,8 +298,7 @@ tr:hover td{background:var(--bg)}
   <button class="bn-tab active" onclick="goPageM('home',this)"><span class="bn-icon">🏠</span>홈</button>
   <button class="bn-tab" onclick="goPageM('sales',this)"><span class="bn-icon">📊</span>매출</button>
   <button class="bn-tab" onclick="goPageM('pipeline',this)"><span class="bn-icon">🔁</span>파이프라인</button>
-  <button class="bn-tab" onclick="goPageM('group',this)"><span class="bn-icon">👥</span>그룹현황</button>
-  <button class="bn-tab" onclick="goPageM('report',this)"><span class="bn-icon">📰</span>주간보고</button>
+  <button class="bn-tab" onclick="goPageM('group',this)"><span class="bn-icon">👥</span>그룹·주간</button>
 </nav>
 
 <!-- GNB -->
@@ -308,8 +308,7 @@ tr:hover td{background:var(--bg)}
     <div class="gnb-tab active" onclick="goPage('home',this)">홈</div>
     <div class="gnb-tab" onclick="goPage('sales',this)">매출 현황</div>
     <div class="gnb-tab" onclick="goPage('pipeline',this)">CRM 파이프라인</div>
-    <div class="gnb-tab" onclick="goPage('group',this)">그룹별 현황</div>
-    <div class="gnb-tab" onclick="goPage('report',this)">주간 보고</div>
+    <div class="gnb-tab" onclick="goPage('group',this)">그룹 · 주간현황</div>
   </div>
   <div class="gnb-right">
     <span class="gnb-clock" id="clock"></span>
@@ -354,7 +353,7 @@ tr:hover td{background:var(--bg)}
       <span class="kpi-b" id="h-rate-b" style="background:rgba(255,255,255,.25);color:#fff">-</span>
     </div>
     <div class="card kpi-card-amber">
-      <div class="kpi-lbl">연간 진도율</div>
+      <div class="kpi-lbl" id="h-prog-lbl">연간 진도율</div>
       <div class="kpi-v" id="h-prog-val">-</div>
       <div class="kpi-sub" id="h-prog-sub">-</div>
       <span class="kpi-b" id="h-prog-b" style="background:rgba(255,255,255,.25);color:#fff">-</span>
@@ -492,7 +491,8 @@ tr:hover td{background:var(--bg)}
 <!-- ===== GROUP (그룹별현황 + 주간보고 통합) ===== -->
 <div class="page" id="page-group">
   <div class="gtabs">
-    <button class="gtab active" data-grp="1" onclick="switchG(1,this)">엔터 1그룹</button>
+    <button class="gtab active" data-grp="0" onclick="switchG(0,this)" style="border-color:var(--t2);color:var(--t1)">전체</button>
+    <button class="gtab" data-grp="1" onclick="switchG(1,this)">엔터 1그룹</button>
     <button class="gtab" data-grp="2" onclick="switchG(2,this)">엔터 2그룹</button>
     <button class="gtab" data-grp="3" onclick="switchG(3,this)">엔터 3그룹</button>
   </div>
@@ -540,7 +540,7 @@ let sfGrp='전체',sfDiv='전체';
 let pStage='',pState='';
 let pFiltered=[];
 let CM={};
-let curGrp=1;
+let curGrp=0;
 let pLayout=2;
 const TODAY=new Date();
 
@@ -712,9 +712,27 @@ function renderHome(){
     rb.textContent='▼ '+fmt(mT-mS)+' 부족';
   }
 
-  /* 진도율 */
+  /* 진도율 — 월별/그룹별 세분화 */
+  let progLabel='연간 진도율', progDetail='';
+  if(selMonth===0){
+    const g1p=Array.from({length:12},(_,i)=>sumS('1그룹','전체',i+1)).reduce((a,b)=>a+b,0);
+    const g2p=Array.from({length:12},(_,i)=>sumS('2그룹','전체',i+1)).reduce((a,b)=>a+b,0);
+    const g3p=Array.from({length:12},(_,i)=>sumS('3그룹','전체',i+1)).reduce((a,b)=>a+b,0);
+    const g1t=Array.from({length:12},(_,i)=>getT('1그룹','전체',i+1)).reduce((a,b)=>a+b,0);
+    const g2t=Array.from({length:12},(_,i)=>getT('2그룹','전체',i+1)).reduce((a,b)=>a+b,0);
+    const g3t=Array.from({length:12},(_,i)=>getT('3그룹','전체',i+1)).reduce((a,b)=>a+b,0);
+    progDetail='1그룹 '+(g1t>0?(g1p/g1t*100).toFixed(0):'-')+'% · 2그룹 '+(g2t>0?(g2p/g2t*100).toFixed(0):'-')+'% · 3그룹 '+(g3t>0?(g3p/g3t*100).toFixed(0):'-')+'%';
+  } else {
+    const g1r=sumS('1그룹','전체',selMonth),g1t=getT('1그룹','전체',selMonth);
+    const g2r=sumS('2그룹','전체',selMonth),g2t=getT('2그룹','전체',selMonth);
+    const g3r=sumS('3그룹','전체',selMonth),g3t=getT('3그룹','전체',selMonth);
+    progLabel=selMonth+'월 그룹별 달성률';
+    progDetail='1그룹 '+(g1t>0?(g1r/g1t*100).toFixed(0):'-')+'% · 2그룹 '+(g2t>0?(g2r/g2t*100).toFixed(0):'-')+'% · 3그룹 '+(g3t>0?(g3r/g3t*100).toFixed(0):'-')+'%';
+  }
+  const progEl=document.getElementById('h-prog-lbl');
+  if(progEl)progEl.textContent=progLabel;
   document.getElementById('h-prog-val').textContent=prog.toFixed(1)+'%';
-  document.getElementById('h-prog-sub').textContent='누적 실적 / 연간 목표';
+  document.getElementById('h-prog-sub').textContent=progDetail;
   document.getElementById('h-prog-b').textContent=(totalFC>0?'예상수주 포함 '+((cumS+totalFC)/annT*100).toFixed(1)+'%':'예상수주 없음');
 
   /* 누적 차트 */
@@ -756,7 +774,6 @@ function renderNCSection(){
       <span style="font-size:12px;font-weight:700;color:var(--teal)">신규 고객사</span>
     </div>
     <div class="nc-cnt" style="color:var(--teal)">${newRows.length}건</div>
-    <div class="nc-amt">${fmt(nAmt)}</div>
     ${topNew.map(([name,v],i)=>{
       const badge=selMonth===0?[...v.months].sort().map(m=>`<span class="nc-badge" style="background:#E2F5EA;color:#1A7A3F">${m}월</span>`).join(''):'';
       return `<div class="rrow"><span class="rn">${i+1}</span><span class="rnm">${name}${badge}</span><span class="ramt" style="color:var(--teal)">${fmt(v.amt)}</span></div>`;
@@ -779,58 +796,93 @@ function renderNCSection(){
       <span style="font-size:12px;font-weight:700;color:var(--red)">해지 고객사</span>
     </div>
     <div class="nc-cnt" style="color:var(--red)">${Object.keys(cByC).length}건</div>
-    <div class="nc-amt">${fmt(cAmt)}</div>
     ${topCancel.map(([name,v],i)=>{
-      const badge=selMonth===0?`<span class="nc-badge" style="background:#FDECEC;color:#B02020">${v.dm}월 반영</span>`:'';
+      const badge=selMonth===0?`<span class="nc-badge" style="background:#FDECEC;color:#B02020">${v.dm}월</span>`:'';
       return `<div class="rrow"><span class="rn">${i+1}</span><span class="rnm">${name}${badge}</span><span class="ramt" style="color:var(--red)">-${fmt(v.amt)}</span></div>`;
     }).join('')||nd()}`;
 }
 
-/* 누적 추이 차트 */
+/* 누적 추이 차트 — 기준월 반영, 꺾은선 */
 function drawTrendChart(cur){
   const ms=Array.from({length:12},(_,i)=>i+1);
   let cumS=0,cumT=0;
-  const aD=[],dD=[],fD=[],tD=[];
+  const aD=[],dD=[],fcBarD=[],tD=[];
 
+  // 월평균(예측용)
   const realMs=ms.filter(m=>m<=cur&&sumS('전체','전체',m)>0);
   const avg=realMs.length?realMs.reduce((s,m)=>s+sumS('전체','전체',m),0)/realMs.length:0;
 
+  // 기준월 선택 시: 해당 월만 포커스 (막대 강조)
+  const focusM = selMonth===0 ? null : selMonth;
+
   ms.forEach(m=>{
     const mS=sumS('전체','전체',m);
-    const mFC=sumFC('전체','전체',m);
     const mT=getT('전체','전체',m);
-    cumT+=mT;tD.push(cumT||null);
+    // 예상수주: 전체=모든월, 월선택=해당월만
+    const mFC=(focusM===null||m===focusM)?sumFC('전체','전체',m):0;
+    cumT+=mT; tD.push(cumT||null);
 
     if(m<=cur&&mS>0){
       cumS+=mS;
-      aD.push(cumS);dD.push(null);
-      fD.push(mFC>0?cumS+mFC:null);
+      // 선택 월이면 강조, 아니면 연하게
+      aD.push(cumS); dD.push(null);
+      fcBarD.push(mFC>0?mFC:null); // 예상수주는 당월 누적 위에 쌓지 않고 별도 포인트
     } else if(m<=cur){
-      cumS+=mS;
-      aD.push(cumS||null);dD.push(null);fD.push(null);
+      cumS+=mS; aD.push(cumS||null); dD.push(null); fcBarD.push(null);
     } else {
       aD.push(null);
       const pred=(cumS||0)+(m-cur)*avg;
       dD.push(pred>0?pred:null);
-      fD.push(mFC>0?(pred||0)+mFC:null);
+      fcBarD.push(mFC>0?mFC:null);
     }
   });
 
-  mkC('chart-trend','bar',ms.map(m=>m+'월'),[
-    // 확정 실적 (진한 초록)
-    {label:'실적',data:aD,backgroundColor:'#18A068CC',borderRadius:4,order:3,borderSkipped:false},
-    // 예측 점선 영역 (연한 초록 + 점선)
-    {label:'예측',data:dD,type:'line',borderColor:'#18A068',backgroundColor:'rgba(24,160,104,.12)',
-     borderWidth:2,borderDash:[5,4],pointRadius:3,pointBackgroundColor:'#18A068',
-     pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.3,fill:true,order:2},
-    // 예상수주 (주황)
-    {label:'예상수주',data:fD,backgroundColor:'rgba(232,150,10,.55)',borderRadius:4,order:4},
-    // 목표선 (빨강 실선)
-    {label:'목표',data:tD,type:'line',borderColor:'#D93636',backgroundColor:'transparent',
-     borderWidth:2,pointRadius:2,tension:0,order:1}
+  // 실적 색상: 선택월이면 해당월만 진하게
+  const actualColors=ms.map(m=>{
+    if(focusM===null) return m<=cur?'rgba(24,160,104,0.85)':'transparent';
+    return m===focusM?'rgba(24,160,104,1)':'rgba(24,160,104,0.18)';
+  });
+  const targetColors=ms.map(m=>{
+    if(focusM===null) return '#D93636';
+    return m===focusM?'#D93636':'rgba(217,54,54,0.25)';
+  });
+
+  mkC('chart-trend','line',ms.map(m=>m+'월'),[
+    // 실적 — 꺾은선 + 아래 그라데이션 fill
+    {label:'실적',data:aD,
+     borderColor:'#18A068',borderWidth:2.5,
+     backgroundColor:'rgba(24,160,104,0.15)',fill:true,
+     pointRadius:ms.map(m=>(focusM===null||m===focusM)&&m<=cur?5:3),
+     pointBackgroundColor:actualColors,
+     pointBorderColor:'#fff',pointBorderWidth:1.5,
+     tension:.35,order:2},
+    // 예측 — 점선
+    {label:'예측',data:dD,
+     borderColor:'#18A068',borderWidth:1.5,
+     backgroundColor:'transparent',
+     borderDash:[6,4],pointRadius:3,
+     pointBackgroundColor:'rgba(24,160,104,0.5)',
+     pointBorderColor:'#fff',pointBorderWidth:1,
+     tension:.3,order:3},
+    // 예상수주 — 막대(bar)로 구분
+    {label:'예상수주',data:fcBarD,
+     type:'bar',backgroundColor:'rgba(232,150,10,0.6)',
+     borderRadius:4,order:4,yAxisID:'y'},
+    // 목표 — 빨강 실선
+    {label:'목표',data:tD,
+     borderColor:'#D93636',borderWidth:2,
+     backgroundColor:'transparent',
+     pointRadius:2,tension:0,order:1,
+     segment:{borderColor:ctx=>targetColors[ctx.p1DataIndex]||'#D93636'}}
   ],{
     yF:v=>fmt(v),
-    ex:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}}}
+    ex:{
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10}}},
+        y:{ticks:{font:{size:10},callback:v=>fmt(v)}}
+      }
+    }
   });
 }
 
@@ -898,52 +950,57 @@ function renderSales(){
         <div class="kpi-v kpi-v-md">${fmt(fc)}</div>
         <div class="kpi-sub">포함 시 ${t>0?((r+fc)/t*100).toFixed(1):'-'}%</div>
       </div>
-      <div class="card ${gap<=0?'kpi-card-teal':''}">
-        <div class="kpi-lbl">목표 잔여</div>
-        <div class="kpi-v kpi-v-md" style="${gap>0?'color:var(--red)':'color:var(--teal)'}">${fmt(Math.abs(gap))}</div>
-        <div class="kpi-sub">${gap>0?'달성 필요':'목표 초과'}</div>
+      <div class="card" style="border-top:3px solid ${gap>0?'var(--red)':'var(--teal)'}">
+        <div class="kpi-lbl" style="color:var(--t2)">목표 잔여</div>
+        <div class="kpi-v kpi-v-md" style="color:${gap>0?'var(--red)':'var(--teal)'}">${fmt(Math.abs(gap))}</div>
+        <div class="kpi-sub" style="color:var(--t3)">${gap>0?'▼ 달성 필요':'▲ 목표 초과'}</div>
       </div>
     </div>`;
   }
 
-  /* 실적 vs 목표 차트 */
-  mkC('chart-monthly','bar',all12.map(m=>m+'월'),[
-    {label:'목표',data:all12.map(m=>getT(g,d,m)||null),
+  /* ─── 차트 데이터: 기준월 반영 ─── */
+  // 선택월=0이면 12개월 전체, 선택월>0이면 해당 월만
+  const chartLabels = selMonth===0 ? all12.map(m=>m+'월') : [sm+'월'];
+  const chartMs     = selMonth===0 ? all12 : [sm];
+
+  // 실적 vs 목표
+  const grpC=g==='1그룹'?'#2E7FD9':g==='2그룹'?'#18A068':g==='3그룹'?'#E8960A':'#18A068';
+  mkC('chart-monthly','bar',chartLabels,[
+    {label:'목표',data:chartMs.map(m=>getT(g,d,m)||null),
      type:'line',borderColor:'#D93636',backgroundColor:'transparent',
-     borderWidth:2,pointRadius:2,tension:0,order:1},
-    {label:'실적',data:all12.map(m=>m<=cur?sumS(g,d,m)||null:null),
-     backgroundColor:g==='1그룹'?'#2E7FD9BB':g==='2그룹'?'#18A068BB':g==='3그룹'?'#E8960ABB':'#18A068BB',
-     borderRadius:4,order:2},
-    {label:'예상수주',data:all12.map(m=>sumFC(g,d,m)||null),
+     borderWidth:2,pointRadius:3,tension:0,order:1},
+    {label:'실적',data:chartMs.map(m=>m<=cur?sumS(g,d,m)||null:null),
+     backgroundColor:grpC+'BB',borderRadius:4,order:2},
+    {label:'예상수주',data:chartMs.map(m=>sumFC(g,d,m)||null),
      backgroundColor:'rgba(232,150,10,.55)',borderRadius:4,order:3}
   ],{yF:v=>fmt(v)});
 
-  /* 그룹별 스택 */
-  mkC('chart-grp-stack','bar',all12.map(m=>m+'월'),
+  // 그룹별 스택 (선택월 필터)
+  mkC('chart-grp-stack','bar',chartLabels,
     ['1그룹','2그룹','3그룹'].map((grp,i)=>({
       label:grp,
-      data:all12.map(m=>m<=cur?sumS(grp,d,m)||null:null),
+      data:chartMs.map(m=>m<=cur?sumS(grp,d,m)||null:null),
       backgroundColor:['#2E7FD9AA','#18A068AA','#E8960AAA'][i],
       borderRadius:3,stack:'s'
     })),
     {yF:v=>fmt(v),xE:{stacked:true},yE:{stacked:true}}
   );
 
-  /* 달성률 */
-  const rates=all12.map(m=>m<=cur&&getT(g,d,m)>0?+(sumS(g,d,m)/getT(g,d,m)*100).toFixed(1):null);
-  mkC('chart-achieve','line',all12.map(m=>m+'월'),[
+  // 달성률 (선택월 필터)
+  const rates=chartMs.map(m=>m<=cur&&getT(g,d,m)>0?+(sumS(g,d,m)/getT(g,d,m)*100).toFixed(1):null);
+  mkC('chart-achieve','line',chartLabels,[
     {label:'달성률',data:rates,borderColor:'#2E7FD9',backgroundColor:'rgba(46,127,217,.08)',
-     fill:true,tension:.4,pointRadius:4,borderWidth:2,
+     fill:true,tension:.4,pointRadius:5,borderWidth:2,
      pointBackgroundColor:rates.map(v=>v===null?'transparent':v>=100?'#18A068':'#E8960A'),
      pointBorderColor:'#fff',pointBorderWidth:1.5},
-    {label:'100%',data:all12.map(()=>100),borderColor:'rgba(217,54,54,.35)',
+    {label:'100%',data:chartMs.map(()=>100),borderColor:'rgba(217,54,54,.35)',
      borderDash:[4,3],borderWidth:1,pointRadius:0}
   ],{yF:v=>v+'%',yE:{min:0}});
 
-  /* 신규/해지 */
-  const nData=all12.map(m=>D.sales.filter(r=>isNew(r)&&n(r['매출월'])===m&&(g==='전체'||r['그룹']===g)).length);
-  const cData=all12.map(m=>D.sales.filter(r=>isCancel(r)&&n(r['매출월'])+1===m&&(g==='전체'||r['그룹']===g)).length);
-  mkC('chart-nc','bar',all12.map(m=>m+'월'),[
+  // 신규/해지 (선택월 필터)
+  const nData=chartMs.map(m=>D.sales.filter(r=>isNew(r)&&n(r['매출월'])===m&&(g==='전체'||r['그룹']===g)).length);
+  const cData=chartMs.map(m=>D.sales.filter(r=>isCancel(r)&&n(r['매출월'])+1===m&&(g==='전체'||r['그룹']===g)).length);
+  mkC('chart-nc','bar',chartLabels,[
     {label:'신규',data:nData,backgroundColor:'#18A068AA',borderRadius:3,stack:'s'},
     {label:'해지',data:cData.map(v=>-v),backgroundColor:'#D93636AA',borderRadius:3,stack:'s'}
   ],{yF:v=>Math.abs(v)+'건'});
@@ -1095,20 +1152,24 @@ function switchG(num,el){
   curGrp=num;
   document.querySelectorAll('.gtab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
+  killCharts();
   renderGroup(num);
 }
 
 function renderGroup(num){
-  if(!D.crm.length)return;
-  const grp=num+'그룹';
+  if(!D.crm.length&&!D.sales.length)return;
+  const isAll=(num===0);
+  const grp=isAll?'전체':num+'그룹';
   const cur=getCurMonth();
   const sm=selMonth||cur;
-  const cG=D.crm.filter(r=>r['그룹']===grp);
+  const cG=isAll?D.crm:D.crm.filter(r=>r['그룹']===grp);
   const t=cG.length||1;
   const suc=cG.filter(r=>r['진행상태']==='종료(성공)').length;
   const act=cG.filter(r=>r['진행상태']==='진행중').length;
   const fail=cG.filter(r=>r['진행상태']==='종료(실패)'||r['진행상태']==='보류/연기').length;
-  const grpColor=['','var(--grp1)','var(--grp2)','var(--grp3)'][num];
+  // 전체 탭 제목
+  const grpTitle=isAll?'전체':grp;
+  const grpColor=isAll?'var(--t1)':['','var(--grp1)','var(--grp2)','var(--grp3)'][num];
 
   // 단계별 건수
   const stageCnts=STAGES.map(s=>cG.filter(r=>r['단계']===s).length);
@@ -1124,7 +1185,7 @@ function renderGroup(num){
   const pm={};
   cG.forEach(r=>{
     const p=r['담당자']||'-';
-    if(!pm[p])pm[p]={tot:0,act:0,suc:0};
+    if(!pm[p])pm[p]={grp:r['그룹']||'-',tot:0,act:0,suc:0};
     pm[p].tot++;
     if(r['진행상태']==='진행중')pm[p].act++;
     if(r['진행상태']==='종료(성공)')pm[p].suc++;
@@ -1141,12 +1202,15 @@ function renderGroup(num){
       <span class="fc-cnt">${cnt}</span></div>`;
   }).join('');
 
-  // 월별 실적
+  // 월별 실적 — 기준월 반영
   const all12=Array.from({length:12},(_,i)=>i+1);
-  const gS=all12.map(m=>sumS(grp,'전체',m));
-  const gT=all12.map(m=>getT(grp,'전체',m));
-  const gFC=all12.map(m=>sumFC(grp,'전체',m));
-  const smS=sumS(grp,'전체',sm),smT=getT(grp,'전체',sm);
+  const chartMs2=selMonth===0?all12:[sm];
+  const chartLbls2=selMonth===0?all12.map(m=>m+'월'):[sm+'월'];
+  const gS=chartMs2.map(m=>sumS(grp,'전체',m));
+  const gT=chartMs2.map(m=>getT(grp,'전체',m));
+  const gFC=chartMs2.map(m=>sumFC(grp,'전체',m));
+  const smS=isAll?sumS('전체','전체',sm):sumS(grp,'전체',sm);
+  const smT=isAll?getT('전체','전체',sm):getT(grp,'전체',sm);
   const smR=smT>0?(smS/smT*100).toFixed(1):'-';
 
   document.getElementById('grp-body').innerHTML=`
@@ -1186,9 +1250,10 @@ function renderGroup(num){
       <div class="kpi-sub">전체 ${t}건 중</div>
     </div>
     <div class="card" style="border-top:3px solid ${grpColor}">
-      <div class="kpi-lbl">${sm}월 달성률</div>
-      <div class="kpi-v" style="color:${n(smR)>=100?'var(--teal)':'var(--amber)'}">${smR}%</div>
-      <div class="kpi-sub">실적 ${fmt(smS)} / 목표 ${fmt(smT)}</div>
+      <div class="kpi-lbl" style="color:var(--t2)">${sm}월 달성률</div>
+      <div class="kpi-v" style="color:${n(smR)>=100?'var(--teal)':'var(--red)'}">${smR}%</div>
+      <div class="kpi-sub" style="color:var(--t3)">실적 ${fmt(smS)} / 목표 ${fmt(smT)}</div>
+      <span class="kpi-b ${n(smR)>=100?'b-up':'b-down'}">${n(smR)>=100?'▲ 목표 초과':'▼ '+fmt(smT-smS)+' 부족'}</span>
     </div>
     <div class="card" style="border-top:3px solid ${grpColor}">
       <div class="kpi-lbl">진행중</div>
@@ -1200,8 +1265,8 @@ function renderGroup(num){
   <!-- 차트 + 파이프라인 -->
   <div class="g2">
     <div class="card">
-      <div class="ct">월별 실적 vs 목표 (${grp})</div>
-      <div class="cw h220"><canvas id="chart-grp-${num}"></canvas></div>
+      <div class="ct">월별 실적 vs 목표 (${grpTitle})</div>
+      <div class="cw h220"><canvas id="${isAll?'chart-grp-0':'chart-grp-'+num}"></canvas></div>
     </div>
     <div class="card">
       <div class="ct">파이프라인 현황</div>
@@ -1215,9 +1280,9 @@ function renderGroup(num){
       <div class="ct">담당자별 현황 <span class="ct-note">종료(성공) 높은순</span></div>
       <div class="tw">
         <table>
-          <thead><tr><th>담당자</th><th>전체</th><th>진행중</th><th style="color:var(--teal)">성공</th></tr></thead>
+          <thead><tr><th>담당자</th>${isAll?'<th>그룹</th>':''}<th>전체</th><th>진행중</th><th style="color:var(--teal)">성공</th></tr></thead>
           <tbody>${Object.entries(pm).sort((a,b)=>b[1].suc-a[1].suc).map(([name,v])=>`
-            <tr><td>${name}</td>
+            <tr><td>${name}</td>${isAll?`<td style="font-size:10px;color:var(--t3)">${v.grp}</td>`:''}
             <td style="font-weight:600">${v.tot}</td>
             <td style="color:#C0185A">${v.act}</td>
             <td style="color:var(--teal);font-weight:700">${v.suc}</td></tr>`).join('')}
@@ -1236,9 +1301,13 @@ function renderGroup(num){
   </div>`;
 
   setTimeout(()=>{
-    mkC(`chart-grp-${num}`,'bar',all12.map(m=>m+'월'),[
-      {label:'실적',data:gS.map((v,i)=>i<cur?v||null:null),backgroundColor:grpColor+'AA',borderRadius:3,order:2},
-      {label:'예상수주',data:gFC.map(v=>v||null),backgroundColor:'rgba(232,150,10,.5)',borderRadius:3,order:3},
+    const gcId=isAll?'chart-grp-0':`chart-grp-${num}`;
+    const gcColor=isAll?'#2E7FD9':grpColor;
+    mkC(gcId,'bar',chartLbls2,[
+      {label:'실적',data:gS.map((v,i)=>chartMs2[i]<=cur?v||null:null),
+       backgroundColor:gcColor+'BB',borderRadius:3,order:2},
+      {label:'예상수주',data:gFC.map(v=>v||null),
+       backgroundColor:'rgba(232,150,10,.5)',borderRadius:3,order:3},
       {label:'목표',data:gT,type:'line',borderColor:'#D93636',backgroundColor:'transparent',
        borderWidth:1.5,borderDash:[5,3],pointRadius:2,tension:0,order:1}
     ],{yF:v=>fmt(v)});
@@ -1327,7 +1396,7 @@ function renderReport(){
 /* =====================================================
    PAGE SWITCH
 ===================================================== */
-const PAGE_IDS=['home','sales','pipeline','group','report'];
+const PAGE_IDS=['home','sales','pipeline','group'];
 function syncBnav(id){
   document.querySelectorAll('.bn-tab').forEach((b,i)=>b.classList.toggle('active',PAGE_IDS[i]===id));
 }
@@ -1341,7 +1410,8 @@ function goPage(id,el){
 }
 function goPageM(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.gnb-tab').forEach((t,i)=>t.classList.toggle('active',PAGE_IDS[i]===id));
+  const gnbTabs2=document.querySelectorAll('.gnb-tab');
+  gnbTabs2.forEach((t,i)=>t.classList.toggle('active',PAGE_IDS[i]===id));
   document.querySelectorAll('.bn-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
