@@ -582,7 +582,13 @@ function parseCSV(txt){
     const v=splitL(l);
     if(v.every(x=>x.trim()===''))return null;
     const o={};hdr.forEach((h,i)=>o[h]=(v[i]||'').trim());return o;
-  }).filter(Boolean);
+  }).filter(Boolean).filter(r=>{
+    // 빈 행이나 헤더가 반복되는 행 제거
+    const firstVal=Object.values(r)[0]||'';
+    // 첫번째 값이 헤더명과 동일하면 제거 (헤더 반복 행)
+    if(firstVal===hdr[0])return false;
+    return true;
+  });
 }
 function splitL(line){
   const r=[];let c='',q=false;
@@ -1060,7 +1066,13 @@ function renderSales(){
 const STAGES=['기회인지','제안','견적','계약','개통완료'];
 
 function buildPSelects(){
-  const pers=[...new Set(D.crm.map(r=>r['담당자']).filter(Boolean))].sort();
+  const validN=p=>{
+    if(!p||p.length<2||p.length>6)return false;
+    if(/^[가-힣]{2,5}$/.test(p))return true;
+    if(/^[A-Za-z\s]{2,15}$/.test(p))return true;
+    return false;
+  };
+  const pers=[...new Set(D.crm.map(r=>(r['담당자']||'').trim()).filter(validN))].sort();
   document.getElementById('s-per').innerHTML='<option value="">담당자 전체</option>'+pers.map(p=>`<option>${p}</option>`).join('');
 }
 
@@ -1256,10 +1268,16 @@ function renderGroup(num){
 
   // 담당자별
   const pm={};
+  const validName=p=>{
+    if(!p||p.length<2||p.length>6)return false;
+    // 한글 이름(2~5자) 또는 영문 이름만 허용
+    if(/^[가-힣]{2,5}$/.test(p))return true;
+    if(/^[A-Za-z\s]{2,15}$/.test(p))return true;
+    return false;
+  };
   cG.forEach(r=>{
     const p=(r['담당자']||'').trim();
-    // 이상한 담당자명 필터 (빈값, 20자 초과, 특수문자 포함된 경우 제외)
-    if(!p||p.length>20||p.includes('포함')||p.includes('http')||p==='-')return;
+    if(!validName(p))return;
     if(!pm[p])pm[p]={grp:r['그룹']||'-',tot:0,act:0,suc:0};
     pm[p].tot++;
     if(r['진행상태']==='진행중')pm[p].act++;
