@@ -77,15 +77,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Goth
 .prog-fill{height:100%;border-radius:3px;transition:width .6s;background:#5B8FD6}
 /* KPI 카드 색상 배경 */
 /* KPI 카드 — 고급 파스텔 */
-.kpi-card-blue{background:#EEF5FF;border-left:4px solid #5B8FD6!important;border:.5px solid #C5D9F5}
+.kpi-card-blue{background:#EEF5FF;border:.5px solid #C5D9F5;border-top:3px solid #5B8FD6}
 .kpi-card-blue .kpi-lbl{color:#3A6AAA}
 .kpi-card-blue .kpi-v{color:#1E4D8C;font-size:30px}
 .kpi-card-blue .kpi-sub{color:#6A8FC0}
-.kpi-card-teal{background:#EDFAF3;border-left:4px solid #3DB87E!important;border:.5px solid #B8E8D0}
+.kpi-card-teal{background:#EDFAF3;border:.5px solid #B8E8D0;border-top:3px solid #3DB87E}
 .kpi-card-teal .kpi-lbl{color:#1E7A50}
 .kpi-card-teal .kpi-v{color:#145C3B;font-size:30px}
 .kpi-card-teal .kpi-sub{color:#4E9E72}
-.kpi-card-amber{background:#FFF8EC;border-left:4px solid #D4880A!important;border:.5px solid #F5DFA0}
+.kpi-card-amber{background:#FFF8EC;border:.5px solid #F5DFA0;border-top:3px solid #D4880A}
 .kpi-card-amber .kpi-lbl{color:#8A5800}
 .kpi-card-amber .kpi-v{color:#6B4200;font-size:30px}
 .kpi-card-amber .kpi-sub{color:#A87030}
@@ -149,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Goth
 .msum{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:10px}
 .mc{background:var(--card);border:.5px solid var(--b1);border-radius:var(--rsm);padding:8px 10px;text-align:center}
 .mc-lbl{font-size:9px;color:var(--t3);margin-bottom:2px}
-.mc-v{font-size:18px;font-weight:700}
+.mc-v{font-size:20px;font-weight:700}
 
 /* CRM CARDS */
 .cards-grid-1{display:grid;grid-template-columns:1fr;gap:9px}
@@ -217,8 +217,8 @@ tr:hover td{background:var(--bg)}
 
 /* GROUP PAGE */
 .gtabs{display:flex;gap:6px;margin-bottom:14px}
-.gtab{font-size:12px;padding:5px 14px;border:.5px solid var(--b2);border-radius:20px;cursor:pointer;background:transparent;color:var(--t2);transition:all .12s}
-.gtab[data-grp="0"].active{background:var(--t1);color:#fff;border-color:var(--t1)}
+.gtab{font-size:13px;padding:6px 16px;border:.5px solid var(--b2);border-radius:20px;cursor:pointer;background:#fff;color:var(--t1);transition:all .12s;font-weight:500}
+.gtab[data-grp="0"].active{background:#2C2C2A;color:#FFFFFF;border-color:#2C2C2A}
 .gtab[data-grp="1"].active{background:var(--grp1);color:#fff;border-color:var(--grp1)}
 .gtab[data-grp="2"].active{background:var(--grp2);color:#fff;border-color:var(--grp2)}
 .gtab[data-grp="3"].active{background:var(--grp3);color:#fff;border-color:var(--grp3)}
@@ -301,7 +301,7 @@ tr:hover td{background:var(--bg)}
   <button class="bn-tab active" onclick="goPageM('home',this)"><span class="bn-icon">🏠</span>홈</button>
   <button class="bn-tab" onclick="goPageM('sales',this)"><span class="bn-icon">📊</span>매출</button>
   <button class="bn-tab" onclick="goPageM('pipeline',this)"><span class="bn-icon">🔁</span>파이프라인</button>
-  <button class="bn-tab" onclick="goPageM('group',this)"><span class="bn-icon">👥</span>그룹·주간</button>
+  <button class="bn-tab" onclick="goPageM('group',this)"><span class="bn-icon">👥</span>그룹·현황</button>
 </nav>
 
 <!-- GNB -->
@@ -311,7 +311,7 @@ tr:hover td{background:var(--bg)}
     <div class="gnb-tab active" onclick="goPage('home',this)">홈</div>
     <div class="gnb-tab" onclick="goPage('sales',this)">매출 현황</div>
     <div class="gnb-tab" onclick="goPage('pipeline',this)">CRM 파이프라인</div>
-    <div class="gnb-tab" onclick="goPage('group',this)">그룹 · 주간현황</div>
+    <div class="gnb-tab" onclick="goPage('group',this)">그룹 · 현황</div>
   </div>
   <div class="gnb-right">
     <span class="gnb-clock" id="clock"></span>
@@ -476,6 +476,7 @@ tr:hover td{background:var(--bg)}
     <!-- 상태 (각각 다른 색) -->
     <div class="flt-row" style="margin-bottom:3px">
       <span style="font-size:10px;color:var(--t2);font-weight:600;flex-shrink:0">진행상태</span>
+      <button class="flt-btn active" data-state="" onclick="setPSS('',this)">전체</button>
       <button class="flt-btn flt-btn-state-진행중" data-state="진행중" onclick="setPSS('진행중',this)">진행중</button>
       <button class="flt-btn flt-btn-state-success" data-state="종료(성공)" onclick="setPSS('종료(성공)',this)">종료(성공)</button>
       <button class="flt-btn flt-btn-state-fail" data-state="종료(실패)" onclick="setPSS('종료(실패)',this)">종료(실패)</button>
@@ -961,7 +962,7 @@ function renderSales(){
       </div>
       <div class="card kpi-card-amber">
         <div class="kpi-lbl">예상수주 합계</div>
-        <div class="kpi-v kpi-v-md">${fmt(cumFC2)||'없음'}</div>
+        <div class="kpi-v kpi-v-md">${cumFC2>0?fmt(cumFC2):'없음'}</div>
         <div class="kpi-sub">포함 시 ${cumT2>0?((cumR+cumFC2)/cumT2*100).toFixed(1):'-'}%</div>
       </div>
       <div class="card" style="border-top:3px solid ${cumGap<=0?'var(--teal)':'var(--red)'}">
@@ -1076,9 +1077,10 @@ function setPSt(v,el){
   el.classList.add('active');applyPF();
 }
 function setPSS(v,el){
-  const was=el.classList.contains('active');
   document.querySelectorAll('[data-state]').forEach(b=>b.classList.remove('active'));
-  pState=was?'':(el.classList.add('active'),v);applyPF();
+  el.classList.add('active');
+  pState=v;
+  applyPF();
 }
 function resetPF(){
   document.getElementById('s-text').value='';
@@ -1087,6 +1089,7 @@ function resetPF(){
   document.querySelectorAll('[data-stage]').forEach(b=>b.classList.remove('active'));
   document.querySelector('[data-stage=""]').classList.add('active');
   document.querySelectorAll('[data-state]').forEach(b=>b.classList.remove('active'));
+  document.querySelector('[data-state=""]').classList.add('active');
   applyPF();
 }
 function setLayout(n,el){
@@ -1140,21 +1143,23 @@ function mkPCard(d){
   const note=d['비고']||'';
   const isFR=st==='종료(실패)'||st==='보류/연기'; // 비고 강조 표시
 
-  // 화살표 단계 표시
-  const stH=STAGES.map((s,i)=>{
-    const lbl=s==='기회인지'?'인지':s==='개통완료'?'개통':s;
-    let bg,tc,fw='500';
-    if(iF&&i===ci){bg='#8B0000';tc='#fff';fw='700';}
-    else if(i<ci||(iS&&i===ci)){bg='#1A7A3F';tc='#fff';}
-    else if(i===ci){bg='#2E7FD9';tc='#fff';fw='700';}
-    else{bg='#EEF0F2';tc='#9C9890';}
-    const icon=(i<ci||iS)?'✓':(i===ci&&iF)?'✗':'';
-    const arrow=i<STAGES.length-1?`<span style="color:#C8C4BC;font-size:10px;align-self:center;flex-shrink:0">›</span>`:'';
-    return `<span style="display:inline-flex;align-items:center;gap:2px;flex-shrink:0">
-      <span style="background:${bg};color:${tc};font-size:9px;font-weight:${fw};padding:2px 7px;border-radius:12px;white-space:nowrap">${icon?icon+' ':''}${lbl}</span>
-      ${arrow}
-    </span>`;
-  }).join('');
+  // 파이프라인 단계 - 컬러 바 형태 (이미지 스타일)
+  const STAGE_COLORS=['#B0C8E8','#7BAFD4','#8B6FB5','#2DBFA0','#18A068'];
+  const STAGE_DONE_COLORS=['#7BAFD4','#5A9AC5','#6B4FA0','#1A9080','#0E7A4E'];
+  const stH=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-radius:6px;overflow:hidden">
+    ${STAGES.map((s,i)=>{
+      const lbl=s==='기회인지'?'인지':s==='개통완료'?'개통':s;
+      let bg,tc='#fff',fw='600';
+      if(iF&&i===ci){bg='#8B0000';}
+      else if(i<ci||(iS&&i===ci)){bg=STAGE_DONE_COLORS[i];}
+      else if(i===ci){bg=STAGE_COLORS[i];fw='700';}
+      else{bg='#E8E6E2';tc='#AAA79E';fw='400';}
+      const icon=(i<ci||iS)?'✓':(i===ci&&iF)?'✗':'';
+      return `<div style="background:${bg};color:${tc};font-size:10px;font-weight:${fw};padding:5px 3px;text-align:center;white-space:nowrap">
+        ${icon?icon+' ':''}${lbl}
+      </div>`;
+    }).join('')}
+  </div>`;
   const amt=n(d['예상매출']||d['예상매출(만)']||0);
 
   return `<div class="crm-card" onclick="this.classList.toggle('expanded')">
@@ -1170,13 +1175,16 @@ function mkPCard(d){
       <div class="cc-co">${d['고객사']||'-'}</div>
       ${(isFR||st==='보류/연기')&&note?`<div class="nbox ${iF?'nbox-fail':'nbox-warn'}" style="margin-top:6px;font-size:11px">📋 사유: ${note}</div>`:''}
     </div>
-    <div class="sw"><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center;padding:4px 0">${stH}</div></div>
+    <div style="padding:6px 13px;border-top:.5px solid var(--b1);background:#FAFAF9">${stH}</div>
     <div class="cbot">
       <div>
         <div class="cmeta">${d['담당자']||''} · ${d['시작일']||''} ~ ${(d['종료일']||'').slice(5)||''}</div>
-        <div class="cmeta">${d['제품']||'제품 미지정'} · 성공확률 ${d['성공확률(%)']||0}%</div>
+        <div class="cmeta">${d['제품']||'제품 미지정'}</div>
       </div>
-      <div class="camt">${amt?amt.toLocaleString()+'만':'미정'}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div class="camt">${amt?amt.toLocaleString()+'만':'미정'}</div>
+        <div style="font-size:10px;font-weight:600;color:${n(d['성공확률(%)']||0)>=70?'#1A7A3F':n(d['성공확률(%)']||0)>=40?'#8A5800':'#888'}">성공 ${d['성공확률(%)']||0}%</div>
+      </div>
     </div>
     <div class="cdet">
       <div class="dgrid">
@@ -1220,16 +1228,29 @@ function renderGroup(num){
   const stageCnts=STAGES.map(s=>cG.filter(r=>r['단계']===s).length);
   const stageColors=['#B5D4F4','#85B7EB','#2E7FD9','#18A068','#0E6B47'];
 
-  // 계약 Top
+  // 계약 Top - 월별 필터 반영
   const byC={};
-  cG.filter(r=>r['진행상태']==='종료(성공)'||r['단계']==='개통완료')
-    .forEach(r=>{byC[r['고객사']]=(byC[r['고객사']]||0)+n(r['예상매출']||r['예상매출(만)']||0);});
+  cG.filter(r=>{
+    if(r['진행상태']!=='종료(성공)'&&r['단계']!=='개통완료')return false;
+    // 월별 필터: 시작일 또는 종료일 기준
+    if(selMonth>0){
+      const d=r['종료일']||r['시작일']||'';
+      if(!d)return false;
+      try{
+        const dt=new Date(d.replace(/\./g,'-'));
+        if(dt.getMonth()+1!==selMonth)return false;
+      }catch{return false;}
+    }
+    return true;
+  }).forEach(r=>{byC[r['고객사']]=(byC[r['고객사']]||0)+n(r['예상매출']||r['예상매출(만)']||0);});
   const topC=Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,7);
 
   // 담당자별
   const pm={};
   cG.forEach(r=>{
-    const p=r['담당자']||'-';
+    const p=(r['담당자']||'').trim();
+    // 이상한 담당자명 필터 (빈값, 20자 초과, 특수문자 포함된 경우 제외)
+    if(!p||p.length>20||p.includes('포함')||p.includes('http')||p==='-')return;
     if(!pm[p])pm[p]={grp:r['그룹']||'-',tot:0,act:0,suc:0};
     pm[p].tot++;
     if(r['진행상태']==='진행중')pm[p].act++;
@@ -1323,7 +1344,7 @@ function renderGroup(num){
       </div>
     </div>
     <div class="card">
-      <div class="ct">계약 고객사 Top 7</div>
+      <div class="ct">계약 고객사 Top 7 <span class="ct-note" style="color:var(--blue);font-weight:600">${selMonth>0?selMonth+'월 기준':'전체 누적'}</span></div>
       ${topC.map(([name,amt],i)=>`<div class="rrow">
         <span class="rn">${i+1}</span>
         <span class="rnm">${name}</span>
