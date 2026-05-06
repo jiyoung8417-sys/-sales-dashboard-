@@ -218,7 +218,7 @@ tr:hover td{background:var(--bg)}
 /* GROUP PAGE */
 .gtabs{display:flex;gap:6px;margin-bottom:14px}
 .gtab{font-size:13px;padding:6px 16px;border:.5px solid var(--b2);border-radius:20px;cursor:pointer;background:#fff;color:var(--t1);transition:all .12s;font-weight:500}
-.gtab[data-grp="0"].active{background:#2C2C2A;color:#FFFFFF;border-color:#2C2C2A}
+.gtab[data-grp="0"].active{background:#3A3A38;color:#FFFFFF!important;border-color:#3A3A38}
 .gtab[data-grp="1"].active{background:var(--grp1);color:#fff;border-color:var(--grp1)}
 .gtab[data-grp="2"].active{background:var(--grp2);color:#fff;border-color:var(--grp2)}
 .gtab[data-grp="3"].active{background:var(--grp3);color:#fff;border-color:var(--grp3)}
@@ -496,7 +496,7 @@ tr:hover td{background:var(--bg)}
 <!-- ===== GROUP (그룹별현황 + 주간보고 통합) ===== -->
 <div class="page" id="page-group">
   <div class="gtabs">
-    <button class="gtab active" data-grp="0" onclick="switchG(0,this)" style="border-color:var(--t2);color:var(--t1)">전체</button>
+    <button class="gtab active" data-grp="0" onclick="switchG(0,this)">전체</button>
     <button class="gtab" data-grp="1" onclick="switchG(1,this)">엔터 1그룹</button>
     <button class="gtab" data-grp="2" onclick="switchG(2,this)">엔터 2그룹</button>
     <button class="gtab" data-grp="3" onclick="switchG(3,this)">엔터 3그룹</button>
@@ -559,6 +559,8 @@ async function loadAll(){
     setLMsg('목표...');  D.targets=await fetchCSV(SHEETS.TARGET);
     setLMsg('CRM...');   D.crm=await fetchCSV(SHEETS.CRM);
     setLMsg('화면 구성...');
+    // 실제 컬럼명 콘솔 출력 (디버그용)
+    if(D.sales.length>0)console.log('[DEBUG] 실적 컬럼:', Object.keys(D.sales[0]));
     buildPSelects();killCharts();renderAll();
     document.getElementById('upd').textContent='업데이트 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
@@ -620,12 +622,14 @@ function sumS(g,d,m){
   }).reduce((s,r)=>s+n(r['금액']),0);
 }
 function sumFC(g,d,m){
+  // 예상수주 컬럼명 변형 대응 (공백, 한글 유사문자 등)
+  const fcKey=Object.keys(D.sales[0]||{}).find(k=>k.replace(/\s/g,'').includes('예상수주'))||'예상수주';
   return D.sales.filter(r=>{
-    if(g&&g!=='전체'&&r['그룹']!==g)return false;
-    if(d&&d!=='전체'&&r['매출구분']!==d)return false;
+    if(g&&g!=='전체'&&(r['그룹']||'').trim()!==g)return false;
+    if(d&&d!=='전체'&&(r['매출구분']||'').trim()!==d)return false;
     if(m!=null&&n(r['매출월'])!==m)return false;
     return true;
-  }).reduce((s,r)=>s+n(r['예상수주']),0);
+  }).reduce((s,r)=>s+n(r[fcKey]),0);
 }
 function getT(g,d,m){
   return D.targets.filter(r=>{
@@ -696,7 +700,9 @@ function renderHome(){
   let cumS=0;
   for(let m=1;m<=cur;m++)cumS+=sumS('전체','전체',m);
   const annT=Array.from({length:12},(_,i)=>getT('전체','전체',i+1)).reduce((a,b)=>a+b,0);
-  const totalFC=D.sales.reduce((s,r)=>s+n(r['예상수주']),0);
+  // 예상수주 합계: 월 필터 무관하게 전체 합산
+  const fcKey=Object.keys(D.sales[0]||{}).find(k=>k.replace(/\s/g,'').includes('예상수주'))||'예상수주';
+  const totalFC=D.sales.reduce((s,r)=>s+n(r[fcKey]),0);
   const prog=annT>0?cumS/annT*100:0;
 
   document.getElementById('h-total').textContent=fmt(cumS);
@@ -751,12 +757,13 @@ function renderHome(){
   renderNCSection();
 
   /* 예상수주 테이블 (월별 필터 적용) */
-  const fcRows=D.sales.filter(r=>n(r['예상수주'])>0&&(selMonth===0||n(r['매출월'])===selMonth));
+  const fcKey2=Object.keys(D.sales[0]||{}).find(k=>k.replace(/\s/g,'').includes('예상수주'))||'예상수주';
+  const fcRows=D.sales.filter(r=>n(r[fcKey2])>0&&(selMonth===0||n(r['매출월'])===selMonth));
   document.getElementById('fc-tbody').innerHTML=
     fcRows.length?fcRows.sort((a,b)=>n(a['매출월'])-n(b['매출월'])||n(b['예상수주'])-n(a['예상수주']))
     .map(r=>`<tr>
       <td>${n(r['매출월'])}월</td><td>${r['그룹']||'-'}</td><td>${r['고객사']||'-'}</td>
-      <td style="font-weight:700;color:var(--amber)">${fmt(n(r['예상수주']))}</td>
+      <td style="font-weight:700;color:var(--amber)">${fmt(n(r[fcKey2]))}</td>
       <td>${r['매출구분']||'-'}</td>
       <td style="color:var(--t3);font-size:10px">${r['비고']||''}</td>
     </tr>`).join(''):
@@ -949,8 +956,10 @@ function renderSales(){
   /* KPI 카드 */
   if(selMonth===0){
     // 전체: 누적 합산 3카드
-    let cumR=0,cumT2=0,cumFC2=0;
-    for(let m=1;m<=cur;m++){cumR+=sumS(g,d,m);cumT2+=getT(g,d,m);cumFC2+=sumFC(g,d,m);}
+    let cumR=0,cumT2=0;
+    for(let m=1;m<=cur;m++){cumR+=sumS(g,d,m);cumT2+=getT(g,d,m);}
+    // 예상수주는 월 필터 없이 전체 합산 (그룹/구분 필터만 적용)
+    const cumFC2=sumFC(g,d,null);
     const cumRt=cumT2>0?(cumR/cumT2*100).toFixed(1):'-';
     const cumGap=cumT2-cumR;
     document.getElementById('sales-kpi').innerHTML=`<div class="g3">
@@ -962,8 +971,8 @@ function renderSales(){
       </div>
       <div class="card kpi-card-amber">
         <div class="kpi-lbl">예상수주 합계</div>
-        <div class="kpi-v kpi-v-md">${cumFC2>0?fmt(cumFC2):'없음'}</div>
-        <div class="kpi-sub">포함 시 ${cumT2>0?((cumR+cumFC2)/cumT2*100).toFixed(1):'-'}%</div>
+        <div class="kpi-v kpi-v-md" style="${cumFC2>0?'':'font-size:18px;color:var(--t3)'}">${cumFC2>0?fmt(cumFC2):'없음'}</div>
+        <div class="kpi-sub">${cumFC2>0?'포함 시 '+((cumR+cumFC2)/cumT2*100).toFixed(1)+'%':''}</div>
       </div>
       <div class="card" style="border-top:3px solid ${cumGap<=0?'var(--teal)':'var(--red)'}">
         <div class="kpi-lbl" style="color:var(--t2)">목표 잔여</div>
