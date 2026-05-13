@@ -1262,8 +1262,8 @@ function mkPCard(d){
   const isFR=st==='종료(실패)'||st==='보류/연기'; // 비고 강조 표시
 
   // 파이프라인 단계 - 컬러 바 형태 (이미지 스타일)
-  const STAGE_COLORS=['#B0C8E8','#7BAFD4','#8B6FB5','#2DBFA0','#18A068'];
-  const STAGE_DONE_COLORS=['#7BAFD4','#5A9AC5','#6B4FA0','#1A9080','#0E7A4E'];
+  const STAGE_COLORS=['#C9B8E8','#7EC8E8','#F5B97A','#7DD4A8','#3AAF7A'];
+  const STAGE_DONE_COLORS=['#A090CC','#50AACC','#D4904A','#3AAF7A','#1A8A58'];
   const stH=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-radius:6px;overflow:hidden">
     ${STAGES.map((s,i)=>{
       const lbl=s==='기회인지'?'인지':s==='개통완료'?'개통':s;
