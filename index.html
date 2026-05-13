@@ -1270,66 +1270,64 @@ function renderPCards(){
 function mkPCard(d){
   const st=d['진행상태']||'';
   const sc=st==='진행중'?'sb-진행중':st==='종료(성공)'?'sb-성공':st==='종료(실패)'?'sb-실패':'sb-보류';
-  const ci=STAGES.indexOf(d['단계']),iF=st==='종료(실패)',iS=st==='종료(성공)';
+  const ci=STAGES.indexOf(d['단계']);
+  const iF=st==='종료(실패)', iS=st==='종료(성공)';
   const ov=isOverdue(d);
-  const gc=grpClass(d),gbc=grpBadgeClass(d);
-  const note=d['비고']||'';
-  const isFR=st==='종료(실패)'||st==='보류/연기'; // 비고 강조 표시
+  const gbc=grpBadgeClass(d);
+  const note=(d['비고']||'').trim();
+  const isFR=iF||st==='보류/연기';
 
-  // 파이프라인 단계 - 컬러 바 형태 (이미지 스타일)
-  const STAGE_COLORS=['#C9B8E8','#7EC8E8','#F5B97A','#7DD4A8','#3AAF7A'];
-  const STAGE_DONE_COLORS=['#A090CC','#50AACC','#D4904A','#3AAF7A','#1A8A58'];
-  const stH=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-radius:6px;overflow:hidden">
-    ${STAGES.map((s,i)=>{
+  // 금액 포맷
+  const amt=d._displayAmt!=null?d._displayAmt:n(d['예상매출']||d['예상매출(만)']||0);
+  const amtStr=amt>=1e8?(amt/1e8).toFixed(1)+'억':amt>=1e4?Math.round(amt/1e4).toLocaleString()+'만':amt>0?amt.toLocaleString()+'만':'';
+
+  // 단계 컬러바
+  const SC=['#C9B8E8','#7EC8E8','#F5B97A','#7DD4A8','#3AAF7A'];
+  const SD=['#A090CC','#50AACC','#D4904A','#3AAF7A','#1A8A58'];
+  const stBar='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-radius:5px;overflow:hidden;font-size:10px">'
+    +STAGES.map((s,i)=>{
       const lbl=s==='기회인지'?'인지':s==='개통완료'?'개통':s;
-      let bg,tc='#fff',fw='600';
-      if(iF&&i===ci){bg='#8B0000';}
-      else if(i<ci||(iS&&i===ci)){bg=STAGE_DONE_COLORS[i];}
-      else if(i===ci){bg=STAGE_COLORS[i];fw='700';}
-      else{bg='#E8E6E2';tc='#AAA79E';fw='400';}
-      const icon=(i<ci||iS)?'✓':(i===ci&&iF)?'✗':'';
-      return `<div style="background:${bg};color:${tc};font-size:10px;font-weight:${fw};padding:5px 3px;text-align:center;white-space:nowrap">
-        ${icon?icon+' ':''}${lbl}
-      </div>`;
-    }).join('')}
-  </div>`;
-  const amt=n(d['예상매출']||d['예상매출(만)']||0);
+      let bg,tc='#fff',fw='500';
+      if(iF&&i===ci){bg='#E88080';tc='#5A0000';fw='700';}
+      else if(i<ci||(iS&&i===ci)){bg=SD[i];}
+      else if(i===ci){bg=SC[i];tc='#1A1916';fw='700';}
+      else{bg='#EBEBEB';tc='#B0ADA8';}
+      const icon=(i<ci||iS)?'✓ ':i===ci&&iF?'✗ ':'';
+      return '<div style="background:'+bg+';color:'+tc+';font-weight:'+fw+';padding:5px 2px;text-align:center">'+icon+lbl+'</div>';
+    }).join('')+'</div>';
 
-  return `<div class="crm-card" onclick="this.classList.toggle('expanded')">
-    ${ov?'<div class="overdue-icon" title="종료일 초과">!</div>':''}
-    <div class="ctop">
-      <div class="srow2">
-        <span class="sbadge ${sc}">${st}</span>
-        ${d['그룹']?`<span class="sbadge ${gbc}">${d['그룹']}</span>`:''}
+  // 제품+금액 한줄 (왼쪽)
+  const prod=d['제품']||'';
+  const prodLine=prod+(amtStr?' &nbsp;<b style="color:var(--t1);font-size:11px">'+amtStr+'</b>':'');
 
-        ${ov?'<span class="od-dot" style="font-size:10px;padding:2px 8px">⚠ 기한초과</span>':''}
-      </div>
-      <div class="cc-title">${d['영업기회']||'-'}</div>
-      <div class="cc-co">${d['고객사']||'-'}</div>
-      ${(isFR||st==='보류/연기')&&note?`<div class="nbox ${iF?'nbox-fail':'nbox-warn'}" style="margin-top:6px;font-size:11px">📋 사유: ${note}</div>`:''}
-    </div>
-    <div style="padding:6px 13px;border-top:.5px solid var(--b1);background:#FAFAF9">${stH}</div>
-    <div class="cbot">
-      <div>
-        <div class="cmeta">${d['담당자']||''} · ${d['시작일']||''} ~ ${(d['종료일']||'').slice(5)||''}</div>
-        <div class="cmeta">${d['제품']||'제품 미지정'}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <div class="camt">${amt?amt.toLocaleString()+'만':'미정'}</div>
-        <div style="font-size:10px;font-weight:600;color:${n(d['성공확률(%)']||0)>=70?'#1A7A3F':n(d['성공확률(%)']||0)>=40?'#8A5800':'#888'}">성공 ${d['성공확률(%)']||0}%</div>
-      </div>
-    </div>
-    <div class="cdet">
-      <div class="dgrid">
-        <div class="dr"><span class="dl">ID</span><span class="dv">#${d['영업기회ID']||'-'}</span></div>
-        <div class="dr"><span class="dl">이익률</span><span class="dv">${d['예상이익률(%)']||0}%</span></div>
-        <div class="dr"><span class="dl">카테고리</span><span class="dv">${d['카테고리']||'-'}</span></div>
-        <div class="dr"><span class="dl">시작일</span><span class="dv">${d['시작일']||'-'}</span></div>
-      </div>
-      ${note&&!isFR?`<div class="nbox">📋 ${note}</div>`:''}
-    </div>
-  </div>`;
+  return '<div class="crm-card">'
+    +'<div class="ctop">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">'
+    +'<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">'
+    +'<span class="sbadge '+sc+'">'+st+'</span>'
+    +(d['그룹']?'<span class="sbadge '+gbc+'">'+d['그룹']+'</span>':'')
+    +'</div>'
+    +(ov?'<span style="font-size:10px;font-weight:700;color:#B02020;background:#FDECEC;padding:2px 9px;border-radius:20px;white-space:nowrap">기한초과</span>':'')
+    +'</div>'
+    +'<div class="cc-title">'+(d['영업기회']||'-')+'</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:3px">'
+    +'<span class="cc-co">'+(d['고객사']||'-')+'</span>'
+    +'<span class="cmeta">'+(d['담당자']||'')+'</span>'
+    +'</div>'
+    +'</div>'
+    +'<div style="padding:5px 10px;border-top:.5px solid var(--b1);background:#F7F6F4">'+stBar+'</div>'
+    +'<div style="padding:7px 13px;border-top:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+    +'<div>'
+    +'<div class="cmeta">'+(d['시작일']||'')+(d['종료일']?' ~ '+(d['종료일']||'').slice(5):'')+'</div>'
+    +'<div class="cmeta" style="margin-top:2px">'+prodLine+'</div>'
+    +'</div>'
+    +(isFR&&note
+      ?'<div style="max-width:50%;text-align:right;font-size:10px;line-height:1.4;color:'+(iF?'#9A0000':'#6A4C00')+'"><span style="font-weight:600">사유:</span> '+note+'</div>'
+      :'')
+    +'</div>'
+    +'</div>';
 }
+
 
 /* =====================================================
    GROUP — 그룹별현황 (주간보고 통합)
