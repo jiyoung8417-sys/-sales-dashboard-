@@ -453,7 +453,7 @@ tr:hover td{background:var(--bg)}
   <div class="sbox">
     <div class="srow">
       <input class="si" id="s-text" placeholder="고객사, 영업기회, 담당자 검색..." oninput="applyPF()">
-      <select class="ss" id="s-grp" onchange="applyPF()">
+      <select class="ss" id="s-grp" onchange="updatePersonSelect(this.value);applyPF()">
         <option value="">그룹 전체</option>
         <option>1그룹</option><option>2그룹</option><option>3그룹</option>
       </select>
@@ -533,13 +533,13 @@ tr:hover td{background:var(--bg)}
    CONFIG
 ===================================================== */
 const SHEET_ID='1xkbKdUKzSawrVuYDu3zbt0lAuLVXeNmhs4u8hwmRbN0';
-const SHEETS={SALES:'실적',TARGET:'목표',CRM:'CRM'};
+const SHEETS={SALES:'실적',TARGET:'목표',CRM:'CRM',CONTRACT:'계약'};
 const csvUrl=s=>`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(s)}`;
 
 /* =====================================================
    STATE
 ===================================================== */
-let D={sales:[],targets:[],crm:[]};
+let D={sales:[],targets:[],crm:[],contract:[]};
 let selMonth=0;
 let sfGrp='전체',sfDiv='전체';
 let pStage='',pState='';
@@ -558,13 +558,14 @@ async function loadAll(){
     setLMsg('실적...');  D.sales=await fetchCSV(SHEETS.SALES);
     setLMsg('목표...');  D.targets=await fetchCSV(SHEETS.TARGET);
     setLMsg('CRM...');   D.crm=await fetchCSV(SHEETS.CRM);
+    setLMsg('계약...');   D.contract=await fetchCSV(SHEETS.CONTRACT);
     setLMsg('화면 구성...');
     // 실제 컬럼명 콘솔 출력 (디버그용)
     if(D.sales.length>0)console.log('[DEBUG] 실적 컬럼:', Object.keys(D.sales[0]));
     buildPSelects();killCharts();renderAll();
     document.getElementById('upd').textContent='업데이트 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
-    showE('❌ 데이터 로드 실패\n원인: '+e.message+'\n\n① Sheets "웹에 게시" 확인\n② SHEET_ID 확인\n③ 탭이름: 실적/목표/CRM');
+    showE('❌ 데이터 로드 실패\n원인: '+e.message+'\n\n① Sheets "웹에 게시" 확인\n② SHEET_ID 확인\n③ 탭이름: 실적/목표/CRM/계약');
     console.error(e);
   }
   showL(false);
@@ -1060,19 +1061,120 @@ function renderSales(){
   ],{yF:v=>Math.abs(v)+'건'});
 }
 
+
+/* =====================================================
+   CRM + 계약 시트 머지 헬퍼
+   - 단계가 계약/개통완료이면 계약시트 데이터 우선 사용
+   - 고객사ID(CRM:C열, 계약:C열)로 매칭
+   - 계약시트: L열=계약일, S열=공급가액
+===================================================== */
+function getMergedCRM(){
+  if(!D.crm.length) return [];
+
+  // 계약시트 컬럼명 동적 탐색 (시트 구성에 유연하게 대응)
+  const ctSample=D.contract[0]||{};
+  const ctKeys=Object.keys(ctSample);
+  // 고객사ID: C열(index 2)
+  const ctIdKey  =ctKeys.find(k=>k.replace(/\s/g,'').includes('고객사ID'))||ctKeys[2]||'고객사ID';
+  // 계약일: L열(index 11)
+  const ctDateKey=ctKeys.find(k=>k.replace(/\s/g,'').includes('계약일'))||ctKeys[11]||'계약일';
+  // 공급가액: S열(index 18)
+  const ctAmtKey =ctKeys.find(k=>k.replace(/\s/g,'').includes('공급가액'))||ctKeys[18]||'공급가액';
+
+  // CRM 컬럼명 동적 탐색
+  const crmSample=D.crm[0]||{};
+  const crmKeys=Object.keys(crmSample);
+  // 고객사ID: C열(index 2, 새 구조)
+  const crmIdKey=crmKeys.find(k=>k.replace(/\s/g,'').includes('고객사ID'))||crmKeys[2]||'고객사ID';
+
+  // 계약시트를 고객사ID 맵으로 (중복 시 최신 계약일 우선)
+  const contractMap={};
+  D.contract.forEach(r=>{
+    const id=(r[ctIdKey]||'').trim();
+    if(!id) return;
+    // 같은 ID 중복이면 계약일 최신 것 우선
+    if(!contractMap[id]){
+      contractMap[id]=r;
+    } else {
+      const existing=contractMap[id][ctDateKey]||'';
+      const incoming=r[ctDateKey]||'';
+      if(incoming>existing) contractMap[id]=r;
+    }
+  });
+
+  return D.crm.map(crmRow=>{
+    const stage=(crmRow['단계']||'').trim();
+    const isContractStage=(stage==='계약'||stage==='개통완료');
+    const cid=(crmRow[crmIdKey]||crmRow['고객사ID']||crmRow['고객사 ID']||'').trim();
+
+    if(isContractStage && cid && contractMap[cid]){
+      const ct=contractMap[cid];
+      const contractDate=ct[ctDateKey]||'';
+      const supplyAmt=n(ct[ctAmtKey]||0);
+      return {
+        ...crmRow,
+        _contracted:    true,
+        _contractDate:  contractDate,   // 계약시트 L열 계약일
+        _supplyAmt:     supplyAmt,
+        _displayAmt:    supplyAmt,      // 카드에 표시할 금액 = 공급가액
+      };
+    }
+    // 계약단계이나 계약시트 미매칭 → CRM 예상매출 그대로
+    return {
+      ...crmRow,
+      _contracted:   false,
+      _contractDate: '',
+      _displayAmt:   n(crmRow['예상매출']||crmRow['예상매출(만)']||0),
+    };
+  });
+}
+
+/* ──────────────────────────────────────────
+   기준월 필터 헬퍼
+   · 계약/개통완료 → 계약시트 계약일(_contractDate) 기준
+   · 그 외 단계    → CRM 시작일 기준
+   · 날짜 없으면 항상 포함
+   · m=0(전체) → 항상 포함
+────────────────────────────────────────── */
+function parseDate(s){
+  if(!s) return null;
+  try{
+    const dt=new Date(String(s).replace(/\./g,'-').replace(/\//g,'-').trim());
+    return isNaN(dt.getTime())?null:dt;
+  }catch{return null;}
+}
+function getCardMonth(row){
+  const stage=(row['단계']||'').trim();
+  const isContracted=(stage==='계약'||stage==='개통완료');
+  const dateStr=isContracted
+    ? (row._contractDate||row['시작일']||row['종료일']||'')  // 계약시트 계약일 우선
+    : (row['시작일']||row['종료일']||'');                     // CRM 시작일
+  const dt=parseDate(dateStr);
+  return dt ? dt.getMonth()+1 : null; // 1~12 or null
+}
+function cardInMonth(row, m){
+  if(!m) return true;        // m=0: 전체 → 무조건 포함
+  const cardM=getCardMonth(row);
+  if(cardM===null) return true; // 날짜 없으면 포함
+  return cardM===m;
+}
 /* =====================================================
    PIPELINE
 ===================================================== */
 const STAGES=['기회인지','제안','견적','계약','개통완료'];
 
 function buildPSelects(){
+  updatePersonSelect('');
+}
+function updatePersonSelect(grpVal){
   const validN=p=>{
     if(!p||p.length<2||p.length>6)return false;
     if(/^[가-힣]{2,5}$/.test(p))return true;
-    if(/^[A-Za-z\s]{2,15}$/.test(p))return true;
+    if(/^[A-Za-z]{2,15}$/.test(p))return true;
     return false;
   };
-  const pers=[...new Set(D.crm.map(r=>(r['담당자']||'').trim()).filter(validN))].sort();
+  const src=grpVal?D.crm.filter(r=>r['그룹']===grpVal):D.crm;
+  const pers=[...new Set(src.map(r=>(r['담당자']||'').trim()).filter(validN))].sort();
   document.getElementById('s-per').innerHTML='<option value="">담당자 전체</option>'+pers.map(p=>`<option>${p}</option>`).join('');
 }
 
@@ -1081,13 +1183,16 @@ function applyPF(){
   const g=document.getElementById('s-grp').value;
   const p=document.getElementById('s-per').value;
   const d=document.getElementById('s-div').value;
-  pFiltered=D.crm.filter(r=>{
+  const merged=getMergedCRM();
+  pFiltered=merged.filter(r=>{
     if(txt&&!((r['영업기회']||'').toLowerCase().includes(txt)||(r['고객사']||'').toLowerCase().includes(txt)||(r['담당자']||'').includes(txt)))return false;
     if(g&&r['그룹']!==g)return false;
     if(p&&r['담당자']!==p)return false;
     if(d&&r['매출구분']!==d)return false;
     if(pStage&&r['단계']!==pStage)return false;
     if(pState&&r['진행상태']!==pState)return false;
+    // 기준월 필터 (단계에 따라 다른 날짜 기준)
+    if(selMonth>0&&!cardInMonth(r,selMonth))return false;
     return true;
   });
   renderPCards();
@@ -1106,6 +1211,7 @@ function setPSS(v,el){
 function resetPF(){
   document.getElementById('s-text').value='';
   ['s-grp','s-per','s-div'].forEach(id=>document.getElementById(id).value='');
+  updatePersonSelect('');
   pStage='';pState='';
   document.querySelectorAll('[data-stage]').forEach(b=>b.classList.remove('active'));
   document.querySelector('[data-stage=""]').classList.add('active');
@@ -1118,7 +1224,7 @@ function setLayout(n,el){
   document.querySelectorAll('.lt-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');renderPCards();
 }
-function renderPipeline(){pFiltered=[...D.crm];renderPCards();}
+function renderPipeline(){const m=getMergedCRM();pFiltered=selMonth>0?m.filter(r=>cardInMonth(r,selMonth)):m;renderPCards();}
 
 function isOverdue(d){
   if(d['진행상태']!=='진행중')return false;
@@ -1236,46 +1342,45 @@ function renderGroup(num){
   const grp=isAll?'전체':num+'그룹';
   const cur=getCurMonth();
   const sm=selMonth||cur;
-  const cG=isAll?D.crm:D.crm.filter(r=>r['그룹']===grp);
-  const t=cG.length||1;
-  const suc=cG.filter(r=>r['진행상태']==='종료(성공)').length;
-  const act=cG.filter(r=>r['진행상태']==='진행중').length;
-  const fail=cG.filter(r=>r['진행상태']==='종료(실패)'||r['진행상태']==='보류/연기').length;
-  // 전체 탭 제목
+
+  // 머지된 CRM 데이터 사용
+  const mergedAll=getMergedCRM();
+  const cG=isAll?mergedAll:mergedAll.filter(r=>r['그룹']===grp);
+
+  // 기준월 필터 적용한 데이터
+  const cGFiltered=selMonth>0?cG.filter(r=>cardInMonth(r,selMonth)):cG;
+
   const grpTitle=isAll?'전체':grp;
   const grpColor=isAll?'var(--t1)':['','var(--grp1)','var(--grp2)','var(--grp3)'][num];
 
-  // 단계별 건수
-  const stageCnts=STAGES.map(s=>cG.filter(r=>r['단계']===s).length);
-  const stageColors=['#B5D4F4','#85B7EB','#2E7FD9','#18A068','#0E6B47'];
+  // 진행중 단계별 (기준월 필터 적용)
+  const inProgressStages=['기회인지','제안','견적'];
+  const contractedStages=['계약','개통완료'];
+  const inProgressCnts=inProgressStages.map(s=>cGFiltered.filter(r=>r['단계']===s&&r['진행상태']==='진행중').length);
+  const contractedCnts=contractedStages.map(s=>cGFiltered.filter(r=>r['단계']===s).length);
+  const totalInProgress=inProgressCnts.reduce((a,b)=>a+b,0);
+  const totalContracted=contractedCnts.reduce((a,b)=>a+b,0);
+  const suc=cGFiltered.filter(r=>r['진행상태']==='종료(성공)').length;
+  const fail=cGFiltered.filter(r=>r['진행상태']==='종료(실패)'||r['진행상태']==='보류/연기').length;
 
-  // 계약 Top - 월별 필터 반영
+  // 계약 Top - 기준월 필터 + 계약시트 금액
   const byC={};
-  cG.filter(r=>{
-    if(r['진행상태']!=='종료(성공)'&&r['단계']!=='개통완료')return false;
-    // 월별 필터: 시작일 또는 종료일 기준
-    if(selMonth>0){
-      const d=r['종료일']||r['시작일']||'';
-      if(!d)return false;
-      try{
-        const dt=new Date(d.replace(/\./g,'-'));
-        if(dt.getMonth()+1!==selMonth)return false;
-      }catch{return false;}
-    }
-    return true;
-  }).forEach(r=>{byC[r['고객사']]=(byC[r['고객사']]||0)+n(r['예상매출']||r['예상매출(만)']||0);});
+  cGFiltered.filter(r=>r['진행상태']==='종료(성공)'||r['단계']==='개통완료')
+    .forEach(r=>{
+      const a=r._displayAmt||n(r['예상매출']||r['예상매출(만)']||0);
+      byC[r['고객사']]=(byC[r['고객사']]||0)+a;
+    });
   const topC=Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,7);
 
-  // 담당자별
+  // 담당자별 (기준월 필터 적용)
   const pm={};
   const validName=p=>{
     if(!p||p.length<2||p.length>6)return false;
-    // 한글 이름(2~5자) 또는 영문 이름만 허용
     if(/^[가-힣]{2,5}$/.test(p))return true;
-    if(/^[A-Za-z\s]{2,15}$/.test(p))return true;
+    if(/^[A-Za-z]{2,15}$/.test(p))return true;
     return false;
   };
-  cG.forEach(r=>{
+  cGFiltered.forEach(r=>{
     const p=(r['담당자']||'').trim();
     if(!validName(p))return;
     if(!pm[p])pm[p]={grp:r['그룹']||'-',tot:0,act:0,suc:0};
@@ -1284,74 +1389,52 @@ function renderGroup(num){
     if(r['진행상태']==='종료(성공)')pm[p].suc++;
   });
 
-  // 파이프라인 funnel
-  const mx=Math.max(...stageCnts,1);
-  const funnelHtml=STAGES.map((s,i)=>{
-    const cnt=stageCnts[i];
-    const lbl=s==='기회인지'?'인지':s==='개통완료'?'개통':s;
-    return `<div class="frow">
-      <span class="fl">${lbl}</span>
-      <div class="fb"><div class="ff" style="width:${Math.max(8,cnt/mx*100)}%;background:${stageColors[i]}">${cnt}건</div></div>
-      <span class="fc-cnt">${cnt}</span></div>`;
-  }).join('');
-
-  // 월별 실적 — 기준월 반영
-  const all12=Array.from({length:12},(_,i)=>i+1);
-  const chartMs2=selMonth===0?all12:[sm];
-  const chartLbls2=selMonth===0?all12.map(m=>m+'월'):[sm+'월'];
-  const gS=chartMs2.map(m=>sumS(grp,'전체',m));
-  const gT=chartMs2.map(m=>getT(grp,'전체',m));
-  const gFC=chartMs2.map(m=>sumFC(grp,'전체',m));
-  const smS=isAll?sumS('전체','전체',sm):sumS(grp,'전체',sm);
-  const smT=isAll?getT('전체','전체',sm):getT(grp,'전체',sm);
-  const smR=smT>0?(smS/smT*100).toFixed(1):'-';
-
   document.getElementById('grp-body').innerHTML=`
-  <!-- 1. 파이프라인 현황 (맨 위) -->
+  <!-- 파이프라인 현황 + 성과현황 통합 카드 -->
   <div class="card mb">
-    <div class="ct">파이프라인 현황 <span class="ct-note">${grpTitle} 진행단계별</span></div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
-      ${STAGES.map((s,i)=>`<div style="background:${stageColors[i]}18;border:.5px solid ${stageColors[i]}44;border-radius:8px;padding:10px 6px;text-align:center">
-        <div style="font-size:10px;color:${stageColors[i]};font-weight:600;margin-bottom:4px">${s}</div>
-        <div style="font-size:22px;font-weight:700;color:${stageColors[i]}">${stageCnts[i]}</div>
-      </div>`).join('')}
-    </div>
-    ${funnelHtml}
-  </div>
+    <div class="ct">파이프라인 · 성과 현황 <span class="ct-note">${grpTitle} ${selMonth>0?selMonth+'월':'전체'}</span></div>
 
-  <!-- 2. 성과현황 원형 박스 -->
-  <div class="card mb">
-    <div class="ct" style="margin-bottom:14px">성과 현황</div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;text-align:center">
-      <!-- 진행중 인지/제안/견적 -->
-      ${['기회인지','제안','견적'].map((s,i)=>{
-        const cnt=cG.filter(r=>r['단계']===s&&r['진행상태']==='진행중').length;
-        const cols=[['#D0E8FF','#1A56A0'],['#D8F0E0','#1A7A3F'],['#FFF3CC','#8A5800']];
-        return `<div style="background:${cols[i][0]};border-radius:12px;padding:14px 8px">
-          <div style="font-size:11px;color:${cols[i][1]};font-weight:600;margin-bottom:6px">${s}</div>
-          <div style="font-size:28px;font-weight:800;color:${cols[i][1]}">${cnt}</div>
-          <div style="font-size:10px;color:${cols[i][1]};opacity:.7">진행중</div>
-        </div>`;
-      }).join('')}
-      <!-- 누적 종료(성공) -->
-      <div style="background:#EDFAF3;border-radius:12px;padding:14px 8px;border:1.5px solid #B8E8D0">
-        <div style="font-size:11px;color:#1A7A3F;font-weight:600;margin-bottom:6px">종료(성공)</div>
-        <div style="font-size:28px;font-weight:800;color:#1A7A3F">${suc}</div>
-        <div style="font-size:10px;color:#4E9E72">누적</div>
+    <!-- 진행중 섹션 -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px;padding-bottom:5px;border-bottom:.5px solid var(--b1)">
+        진행중 <span style="font-size:12px;font-weight:800;color:#C0185A;margin-left:6px">${totalInProgress}건</span>
       </div>
-      <!-- 종료(실패)+보류 -->
-      <div style="background:#FFF5F5;border-radius:12px;padding:14px 8px;border:1.5px solid #F5C0C0">
-        <div style="font-size:11px;color:#8B0000;font-weight:600;margin-bottom:6px">실패+보류</div>
-        <div style="font-size:28px;font-weight:800;color:#8B0000">${fail}</div>
-        <div style="font-size:10px;color:#B05050">누적</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${inProgressStages.map((s,i)=>{
+          const cols=[['#EEF5FF','#5B8FD6','#1E4D8C'],['#F0F9FF','#5BAAD6','#1E5C8C'],['#FFF8EC','#D4880A','#6B4200']];
+          return `<div style="background:${cols[i][0]};border-radius:10px;padding:12px;text-align:center;border:.5px solid ${cols[i][1]}44">
+            <div style="font-size:11px;color:${cols[i][2]};font-weight:600;margin-bottom:5px">${s}</div>
+            <div style="font-size:28px;font-weight:800;color:${cols[i][2]}">${inProgressCnts[i]}</div>
+          </div>`;
+        }).join('')}
       </div>
     </div>
-  </div>
 
-  <!-- 차트 -->
-  <div class="card mb">
-    <div class="ct">월별 실적 vs 목표 (${grpTitle})</div>
-    <div class="cw h220"><canvas id="${isAll?'chart-grp-0':'chart-grp-'+num}"></canvas></div>
+    <!-- 누적 섹션 (계약+개통) -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px;padding-bottom:5px;border-bottom:.5px solid var(--b1)">
+        누적(계약·개통) <span style="font-size:12px;font-weight:800;color:#1A7A3F;margin-left:6px">${totalContracted}건</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        ${contractedStages.map((s,i)=>{
+          const cols=[['#EDFAF3','#3DB87E','#145C3B'],['#E0F5EE','#18A068','#0D5C3B']];
+          return `<div style="background:${cols[i][0]};border-radius:10px;padding:12px;text-align:center;border:.5px solid ${cols[i][1]}66">
+            <div style="font-size:11px;color:${cols[i][2]};font-weight:600;margin-bottom:5px">${s}</div>
+            <div style="font-size:28px;font-weight:800;color:${cols[i][2]}">${contractedCnts[i]}</div>
+          </div>`;
+        }).join('')}
+        <!-- 종료(성공) -->
+        <div style="background:#EDFAF3;border-radius:10px;padding:12px;text-align:center;border:1.5px solid #3DB87E">
+          <div style="font-size:11px;color:#145C3B;font-weight:700;margin-bottom:5px">종료(성공)</div>
+          <div style="font-size:28px;font-weight:800;color:#145C3B">${suc}</div>
+        </div>
+        <!-- 실패+보류 -->
+        <div style="background:#FFF5F5;border-radius:10px;padding:12px;text-align:center;border:1.5px solid #F5C0C0">
+          <div style="font-size:11px;color:#8B0000;font-weight:700;margin-bottom:5px">실패+보류</div>
+          <div style="font-size:28px;font-weight:800;color:#8B0000">${fail}</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 담당자 + 계약 Top -->
@@ -1371,27 +1454,16 @@ function renderGroup(num){
       </div>
     </div>
     <div class="card">
-      <div class="ct">계약 고객사 Top 7 <span class="ct-note" style="color:var(--blue);font-weight:600">${selMonth>0?selMonth+'월 기준':'전체 누적'}</span></div>
+      <div class="ct">계약 고객사 Top 7 <span class="ct-note" style="color:var(--blue);font-weight:600">${selMonth>0?selMonth+'월 (계약일 기준)':'전체'}</span></div>
       ${topC.map(([name,amt],i)=>`<div class="rrow">
         <span class="rn">${i+1}</span>
         <span class="rnm">${name}</span>
-        <span class="ramt" style="color:var(--teal)">${amt.toLocaleString()}만</span>
+        <span class="ramt" style="color:var(--teal)">${amt>=10000?(amt/10000).toFixed(1)+'억':amt.toLocaleString()+'만'}</span>
       </div>`).join('')||nd()}
     </div>
   </div>`;
 
-  setTimeout(()=>{
-    const gcId=isAll?'chart-grp-0':`chart-grp-${num}`;
-    const gcColor=isAll?'#2E7FD9':grpColor;
-    mkC(gcId,'bar',chartLbls2,[
-      {label:'실적',data:gS.map((v,i)=>chartMs2[i]<=cur?v||null:null),
-       backgroundColor:gcColor+'BB',borderRadius:3,order:2},
-      {label:'예상수주',data:gFC.map(v=>v||null),
-       backgroundColor:'rgba(232,150,10,.5)',borderRadius:3,order:3},
-      {label:'목표',data:gT,type:'line',borderColor:'#D93636',backgroundColor:'transparent',
-       borderWidth:1.5,borderDash:[5,3],pointRadius:2,tension:0,order:1}
-    ],{yF:v=>fmt(v)});
-  },50);
+  // 월별 실적 차트 제거됨
 }
 
 /* =====================================================
