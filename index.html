@@ -163,14 +163,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Goth
 .srow2{display:flex;gap:4px;margin-bottom:5px;flex-wrap:wrap;align-items:center}
 .sbadge{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:600}
 /* 진행상태 배지 */
-.sb-진행중{background:#FFE8EF;color:#C0185A}
-.sb-성공{background:#E2F5EA;color:#1A7A3F}
-.sb-실패{background:#8B0000;color:#fff}
-.sb-보류{background:#F0EEE8;color:#5F5C55}
+.sb-진행중{background:#E8F4FF;color:#1A6BB0}
+.sb-성공{background:#E0F5EE;color:#0D6B47}
+.sb-실패{background:#FDECEA;color:#9A0000}
+.sb-보류{background:#F5F0FF;color:#5040A0}
 /* 그룹 배지 */
-.sb-g1{background:#EBF4FF;color:#1A56A0}
-.sb-g2{background:#E0F5EE;color:#0E6B47}
-.sb-g3{background:#FEF3DC;color:#8A5800}
+.sb-g1{background:#DFF0FF;color:#1060B8}
+.sb-g2{background:#D8F5E8;color:#0A6040}
+.sb-g3{background:#FFF0D0;color:#886000}
 
 .cc-title{font-size:14px;font-weight:600;line-height:1.4;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cc-co{font-size:11px;color:var(--t2)}
@@ -193,14 +193,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Goth
 .dr{display:flex;justify-content:space-between;font-size:10px;padding:2px 0;border-bottom:.5px solid var(--b1)}
 .dr:last-child{border-bottom:none}
 .dl{color:var(--t3)}.dv{color:var(--t1);text-align:right;max-width:140px;word-break:break-all}
-.nbox{margin-top:7px;padding:7px 9px;background:var(--card);border-radius:var(--rsm);font-size:11px;color:var(--t2);line-height:1.6;border:.5px solid var(--b1)}
+.nbox{margin-top:6px;padding:6px 9px;background:#FAFAF8;border-radius:var(--rsm);font-size:11px;color:var(--t2);line-height:1.5;border:.5px solid #E0DED8}
 .nbox-warn{background:#FFFBEA;border-color:#F0D060;color:#7A5800}
 .nbox-fail{background:#FFF5F5;border-color:#F0A0A0;color:#900}
 
 /* 기한초과 */
-.overdue-icon{position:absolute;top:10px;right:10px;width:22px;height:22px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;box-shadow:0 0 0 3px rgba(217,54,54,.2);animation:pulse 1.5s infinite;z-index:10}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(217,54,54,.2)}50%{box-shadow:0 0 0 6px rgba(217,54,54,.07)}}
-.od-dot{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:1px 6px;border-radius:20px;background:#FDECEC;color:#B02020;font-weight:700;margin-left:4px}
+/* overdue icon 제거 — 기한초과는 배지 텍스트로 표시 */
 
 /* LAYOUT TOGGLE */
 .layout-toggle{display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px}
@@ -1129,34 +1127,19 @@ function getMergedCRM(){
   });
 }
 
-/* ──────────────────────────────────────────
-   기준월 필터 헬퍼
-   · 계약/개통완료 → 계약시트 계약일(_contractDate) 기준
-   · 그 외 단계    → CRM 시작일 기준
-   · 날짜 없으면 항상 포함
-   · m=0(전체) → 항상 포함
-────────────────────────────────────────── */
+/* 기준월 필터 — 영업시작일(CRM 시작일) 기준으로 통일 */
 function parseDate(s){
-  if(!s) return null;
+  if(!s)return null;
   try{
-    const dt=new Date(String(s).replace(/\./g,'-').replace(/\//g,'-').trim());
+    const dt=new Date(String(s).replace(/[./]/g,'-').trim());
     return isNaN(dt.getTime())?null:dt;
   }catch{return null;}
 }
-function getCardMonth(row){
-  const stage=(row['단계']||'').trim();
-  const isContracted=(stage==='계약'||stage==='개통완료');
-  const dateStr=isContracted
-    ? (row._contractDate||row['시작일']||row['종료일']||'')  // 계약시트 계약일 우선
-    : (row['시작일']||row['종료일']||'');                     // CRM 시작일
-  const dt=parseDate(dateStr);
-  return dt ? dt.getMonth()+1 : null; // 1~12 or null
-}
-function cardInMonth(row, m){
-  if(!m) return true;        // m=0: 전체 → 무조건 포함
-  const cardM=getCardMonth(row);
-  if(cardM===null) return true; // 날짜 없으면 포함
-  return cardM===m;
+function cardInMonth(row,m){
+  if(!m)return true; // 전체
+  const dt=parseDate(row['시작일']||'');
+  if(!dt)return true; // 날짜 없으면 포함
+  return dt.getMonth()+1===m;
 }
 /* =====================================================
    PIPELINE
@@ -1183,15 +1166,14 @@ function applyPF(){
   const g=document.getElementById('s-grp').value;
   const p=document.getElementById('s-per').value;
   const d=document.getElementById('s-div').value;
-  const merged=getMergedCRM();
-  pFiltered=merged.filter(r=>{
+  // D.crm 원본 기준으로 필터 (개수 정확성 보장)
+  pFiltered=D.crm.filter(r=>{
     if(txt&&!((r['영업기회']||'').toLowerCase().includes(txt)||(r['고객사']||'').toLowerCase().includes(txt)||(r['담당자']||'').includes(txt)))return false;
     if(g&&r['그룹']!==g)return false;
     if(p&&r['담당자']!==p)return false;
     if(d&&r['매출구분']!==d)return false;
     if(pStage&&r['단계']!==pStage)return false;
     if(pState&&r['진행상태']!==pState)return false;
-    // 기준월 필터 (단계에 따라 다른 날짜 기준)
     if(selMonth>0&&!cardInMonth(r,selMonth))return false;
     return true;
   });
@@ -1224,7 +1206,7 @@ function setLayout(n,el){
   document.querySelectorAll('.lt-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');renderPCards();
 }
-function renderPipeline(){const m=getMergedCRM();pFiltered=selMonth>0?m.filter(r=>cardInMonth(r,selMonth)):m;renderPCards();}
+function renderPipeline(){pFiltered=selMonth>0?D.crm.filter(r=>cardInMonth(r,selMonth)):[...D.crm];renderPCards();}
 
 function isOverdue(d){
   if(d['진행상태']!=='진행중')return false;
@@ -1249,16 +1231,25 @@ function renderPCards(){
   const f=pFiltered;
   document.getElementById('pipe-sum').innerHTML=[
     ['전체',f.length,'var(--t1)'],
-    ['진행중',f.filter(r=>r['진행상태']==='진행중').length,'#C0185A'],
+    ['진행중',f.filter(r=>r['진행상태']==='진행중').length,'#1A6BB0'],
     ['종료(성공)',f.filter(r=>r['진행상태']==='종료(성공)').length,'var(--teal)'],
-    ['보류/연기',f.filter(r=>r['진행상태']==='보류/연기').length,'var(--t2)'],
+    ['보류/연기',f.filter(r=>r['진행상태']==='보류/연기').length,'#5040A0'],
     ['종료(실패)',f.filter(r=>r['진행상태']==='종료(실패)').length,'var(--red)'],
   ].map(([l,v,c])=>`<div class="mc"><div class="mc-lbl">${l}</div><div class="mc-v" style="color:${c}">${v}</div></div>`).join('');
   document.getElementById('pipe-res').textContent=`조회 결과: ${f.length}건`;
 
+  // 렌더링 시에만 계약시트 금액/날짜 보정 적용 (개수에는 영향 없음)
+  const merged=getMergedCRM();
+  const mergedMap={};
+  merged.forEach(r=>{const id=r['영업기회ID']||r['고객사ID']||'';if(id)mergedMap[id]=r;});
+  const fEnriched=f.map(r=>{
+    const id=r['영업기회ID']||'';
+    return mergedMap[id]||{...r,_contracted:false,_displayAmt:n(r['예상매출']||r['예상매출(만)']||0)};
+  });
+
   const cls=pLayout===2?'cards-grid-2':'cards-grid-1';
   document.getElementById('pipe-cards').innerHTML=
-    `<div class="${cls}">`+(f.length?f.map(mkPCard).join(''):'<div style="padding:40px;text-align:center;color:var(--t3);font-size:13px;grid-column:1/-1">검색 결과 없음</div>')+`</div>`;
+    `<div class="${cls}">`+(fEnriched.length?fEnriched.map(mkPCard).join(''):'<div style="padding:40px;text-align:center;color:var(--t3);font-size:13px;grid-column:1/-1">검색 결과 없음</div>')+`</div>`;
 }
 
 function mkPCard(d){
