@@ -579,12 +579,17 @@ function parseCSV(txt){
   const hdr=splitL(lines[0]).map(h=>h.trim());
   return lines.slice(1).map(l=>{
     const v=splitL(l);
-    // 모든 값이 비어있으면 제거
     if(v.every(x=>x.trim()===''))return null;
-    // 비어있지 않은 셀이 1개 이하면 제거 (쉼표만 있는 행 등)
     if(v.filter(x=>x.trim()!=='').length<=1)return null;
     const o={};hdr.forEach((h,i)=>o[h]=(v[i]||'').trim());return o;
-  }).filter(Boolean);
+  }).filter(Boolean).filter(r=>{
+    // 영업기회ID가 있는 시트라면 숫자인 행만 통과
+    if('영업기회ID' in r){
+      const id=r['영업기회ID'];
+      if(!id||!/^\d+$/.test(id))return false;
+    }
+    return true;
+  });
 }
 function splitL(line){
   const r=[];let c='',q=false;
@@ -1378,7 +1383,7 @@ function renderGroup(num){
       const a=r._displayAmt||n(r['예상매출']||r['예상매출(만)']||0);
       byC[r['고객사']]=(byC[r['고객사']]||0)+a;
     });
-  const topC=Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const topC=Object.entries(byC).sort((a,b)=>b[1]-a[1]); // 전체 표시
 
   // 담당자별 (기준월 필터 적용)
   const pm={};
@@ -1398,53 +1403,60 @@ function renderGroup(num){
   });
 
   document.getElementById('grp-body').innerHTML=`
-  <!-- 파이프라인 현황 통합 카드 — 원형 도넛 스타일 -->
+  <!-- 파이프라인 현황 — 세련된 통계 카드 -->
   <div class="card mb">
-    <div class="ct">파이프라인 · 성과 현황 <span class="ct-note">${grpTitle} ${selMonth>0?selMonth+'월':'전체'}</span></div>
-    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+    <div class="ct">파이프라인 현황 <span class="ct-note">${grpTitle} ${selMonth>0?selMonth+'월':'전체'} · 총 ${cGFiltered.length}건</span></div>
+    <div style="display:grid;grid-template-columns:160px 1fr;gap:20px;align-items:center">
 
-      <!-- 도넛 차트 영역 -->
-      <div style="position:relative;width:130px;height:130px;flex-shrink:0">
-        <canvas id="chart-donut-${num}" width="130" height="130"></canvas>
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-          <div style="font-size:22px;font-weight:800;color:var(--t1)">${cGFiltered.length}</div>
-          <div style="font-size:10px;color:var(--t3)">전체</div>
+      <!-- 도넛 -->
+      <div style="position:relative;width:160px;height:160px">
+        <canvas id="chart-donut-${num}" width="160" height="160"></canvas>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+          <div style="font-size:28px;font-weight:800;color:var(--t1);line-height:1">${cGFiltered.length}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">전체</div>
         </div>
       </div>
 
-      <!-- 우측 레전드 + 카운트 -->
-      <div style="flex:1;min-width:180px">
-        <!-- 진행중 3단계 -->
-        <div style="margin-bottom:10px">
-          <div style="font-size:10px;font-weight:700;color:var(--t3);margin-bottom:6px;letter-spacing:.5px">진행중</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <!-- 우측 통계 -->
+      <div>
+        <!-- 진행중 행 -->
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#5B8FD6;display:inline-block"></span>
+            진행중 <span style="color:#5B8FD6;font-size:13px;font-weight:800">${totalInProgress}건</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
             ${inProgressStages.map((s,i)=>{
-              const cols=[['#EEF5FF','#5B8FD6'],['#E8F6FF','#3AAAD4'],['#FFF8EC','#D4880A']];
-              return `<div style="background:${cols[i][0]};border:.5px solid ${cols[i][1]}66;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px">
-                <div style="font-size:9px;color:${cols[i][1]};font-weight:600">${s}</div>
-                <div style="font-size:18px;font-weight:800;color:${cols[i][1]}">${inProgressCnts[i]}</div>
+              const bg=[['#EEF5FF','#5B8FD6','#1E4D8C'],['#E0F6FF','#38B0D8','#0A5C7A'],['#FFF8EC','#E8960A','#6B4200']][i];
+              return `<div style="background:${bg[0]};border-radius:10px;padding:10px 6px;text-align:center">
+                <div style="font-size:10px;color:${bg[2]};font-weight:600;margin-bottom:4px">${s}</div>
+                <div style="font-size:26px;font-weight:800;color:${bg[1]};line-height:1">${inProgressCnts[i]}</div>
               </div>`;
             }).join('')}
           </div>
         </div>
-        <!-- 누적 -->
+        <!-- 누적 행 -->
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--t3);margin-bottom:6px;letter-spacing:.5px">누적(계약·개통)</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#18A068;display:inline-block"></span>
+            누적 <span style="color:#18A068;font-size:13px;font-weight:800">${totalContracted+suc}건</span>
+            <span style="margin-left:auto;font-size:10px;color:var(--t3)">실패+보류 ${fail}건</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
             ${contractedStages.map((s,i)=>{
-              const cols=[['#EDFAF3','#18A068'],['#E0F5EE','#0D8050']];
-              return `<div style="background:${cols[i][0]};border:.5px solid ${cols[i][1]}66;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px">
-                <div style="font-size:9px;color:${cols[i][1]};font-weight:600">${s}</div>
-                <div style="font-size:18px;font-weight:800;color:${cols[i][1]}">${contractedCnts[i]}</div>
+              const bg=[['#EDFAF3','#18A068','#0D5C3B'],['#D8F5EA','#0D9060','#064A30']][i];
+              return `<div style="background:${bg[0]};border-radius:10px;padding:10px 6px;text-align:center">
+                <div style="font-size:10px;color:${bg[2]};font-weight:600;margin-bottom:4px">${s}</div>
+                <div style="font-size:26px;font-weight:800;color:${bg[1]};line-height:1">${contractedCnts[i]}</div>
               </div>`;
             }).join('')}
-            <div style="background:#EDFAF3;border:1.5px solid #3DB87E;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px">
-              <div style="font-size:9px;color:#145C3B;font-weight:700">성공</div>
-              <div style="font-size:18px;font-weight:800;color:#145C3B">${suc}</div>
+            <div style="background:#EDFAF3;border:2px solid #3DB87E;border-radius:10px;padding:10px 6px;text-align:center">
+              <div style="font-size:10px;color:#0D5C3B;font-weight:700;margin-bottom:4px">종료성공</div>
+              <div style="font-size:26px;font-weight:800;color:#18A068;line-height:1">${suc}</div>
             </div>
-            <div style="background:#FFF5F5;border:1.5px solid #F5C0C0;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px">
-              <div style="font-size:9px;color:#8B0000;font-weight:700">실패+보류</div>
-              <div style="font-size:18px;font-weight:800;color:#8B0000">${fail}</div>
+            <div style="background:#FFF5F5;border:2px solid #FFAAAA;border-radius:10px;padding:10px 6px;text-align:center">
+              <div style="font-size:10px;color:#8B0000;font-weight:700;margin-bottom:4px">실패+보류</div>
+              <div style="font-size:26px;font-weight:800;color:#CC4444;line-height:1">${fail}</div>
             </div>
           </div>
         </div>
@@ -1469,7 +1481,7 @@ function renderGroup(num){
       </div>
     </div>
     <div class="card">
-      <div class="ct">계약 고객사 Top 7 <span class="ct-note" style="color:var(--blue);font-weight:600">${selMonth>0?selMonth+'월 (계약일 기준)':'전체'}</span></div>
+      <div class="ct">계약 고객사 <span class="ct-note" style="color:var(--blue);font-weight:600">${selMonth>0?selMonth+'월':'전체'} · ${topC.length}건</span></div>
       ${topC.map(([name,amt],i)=>`<div class="rrow">
         <span class="rn">${i+1}</span>
         <span class="rnm">${name}</span>
