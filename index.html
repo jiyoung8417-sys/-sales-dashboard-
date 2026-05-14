@@ -168,7 +168,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Goth
 .sb-실패{background:#FDECEA;color:#9A0000}
 .sb-보류{background:#F5F0FF;color:#5040A0}
 /* 그룹 배지 */
-.sb-g1{background:#DFF0FF;color:#1060B8}
+.sb-g1{background:#E0F5F5;color:#0A7070}
 .sb-g2{background:#D8F5E8;color:#0A6040}
 .sb-g3{background:#FFF0D0;color:#886000}
 
@@ -579,7 +579,10 @@ function parseCSV(txt){
   const hdr=splitL(lines[0]).map(h=>h.trim());
   return lines.slice(1).map(l=>{
     const v=splitL(l);
+    // 모든 값이 비어있으면 제거
     if(v.every(x=>x.trim()===''))return null;
+    // 비어있지 않은 셀이 1개 이하면 제거 (쉼표만 있는 행 등)
+    if(v.filter(x=>x.trim()!=='').length<=1)return null;
     const o={};hdr.forEach((h,i)=>o[h]=(v[i]||'').trim());return o;
   }).filter(Boolean);
 }
@@ -1290,7 +1293,7 @@ function mkPCard(d){
       let bg,tc='#fff',fw='500';
       if(iF&&i===ci){bg='#E88080';tc='#5A0000';fw='700';}
       else if(i<ci||(iS&&i===ci)){bg=SD[i];}
-      else if(i===ci){bg=SC[i];tc='#1A1916';fw='700';}
+      else if(i===ci){bg=SC[i];tc='#fff';fw='700';}
       else{bg='#EBEBEB';tc='#B0ADA8';}
       const icon=(i<ci||iS)?'✓ ':i===ci&&iF?'✗ ':'';
       return '<div style="background:'+bg+';color:'+tc+';font-weight:'+fw+';padding:5px 2px;text-align:center">'+icon+lbl+'</div>';
@@ -1316,14 +1319,15 @@ function mkPCard(d){
     +'</div>'
     +'</div>'
     +'<div style="padding:5px 10px;border-top:.5px solid var(--b1);background:#F7F6F4">'+stBar+'</div>'
-    +'<div style="padding:7px 13px;border-top:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+    // 사유 — 파이프라인 바로 밑 한줄 (실패/보류만)
+    +(isFR&&note
+      ?'<div style="padding:4px 13px;border-top:.5px solid var(--b1);background:'+(iF?'#FFF5F5':'#FFFBEA')+';font-size:10px;color:'+(iF?'#9A0000':'#6A4C00')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font-weight:700">사유:</span> '+note+'</div>'
+      :'')
+    +'<div style="padding:7px 13px;border-top:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center">'
     +'<div>'
     +'<div class="cmeta">'+(d['시작일']||'')+(d['종료일']?' ~ '+(d['종료일']||'').slice(5):'')+'</div>'
     +'<div class="cmeta" style="margin-top:2px">'+prodLine+'</div>'
     +'</div>'
-    +(isFR&&note
-      ?'<div style="max-width:50%;text-align:right;font-size:10px;line-height:1.4;color:'+(iF?'#9A0000':'#6A4C00')+'"><span style="font-weight:600">사유:</span> '+note+'</div>'
-      :'')
     +'</div>'
     +'</div>';
 }
@@ -1394,48 +1398,55 @@ function renderGroup(num){
   });
 
   document.getElementById('grp-body').innerHTML=`
-  <!-- 파이프라인 현황 + 성과현황 통합 카드 -->
+  <!-- 파이프라인 현황 통합 카드 — 원형 도넛 스타일 -->
   <div class="card mb">
     <div class="ct">파이프라인 · 성과 현황 <span class="ct-note">${grpTitle} ${selMonth>0?selMonth+'월':'전체'}</span></div>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
 
-    <!-- 진행중 섹션 -->
-    <div style="margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px;padding-bottom:5px;border-bottom:.5px solid var(--b1)">
-        진행중 <span style="font-size:12px;font-weight:800;color:#C0185A;margin-left:6px">${totalInProgress}건</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${inProgressStages.map((s,i)=>{
-          const cols=[['#EEF5FF','#5B8FD6','#1E4D8C'],['#F0F9FF','#5BAAD6','#1E5C8C'],['#FFF8EC','#D4880A','#6B4200']];
-          return `<div style="background:${cols[i][0]};border-radius:10px;padding:12px;text-align:center;border:.5px solid ${cols[i][1]}44">
-            <div style="font-size:11px;color:${cols[i][2]};font-weight:600;margin-bottom:5px">${s}</div>
-            <div style="font-size:28px;font-weight:800;color:${cols[i][2]}">${inProgressCnts[i]}</div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>
-
-    <!-- 누적 섹션 (계약+개통) -->
-    <div>
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px;padding-bottom:5px;border-bottom:.5px solid var(--b1)">
-        누적(계약·개통) <span style="font-size:12px;font-weight:800;color:#1A7A3F;margin-left:6px">${totalContracted}건</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-        ${contractedStages.map((s,i)=>{
-          const cols=[['#EDFAF3','#3DB87E','#145C3B'],['#E0F5EE','#18A068','#0D5C3B']];
-          return `<div style="background:${cols[i][0]};border-radius:10px;padding:12px;text-align:center;border:.5px solid ${cols[i][1]}66">
-            <div style="font-size:11px;color:${cols[i][2]};font-weight:600;margin-bottom:5px">${s}</div>
-            <div style="font-size:28px;font-weight:800;color:${cols[i][2]}">${contractedCnts[i]}</div>
-          </div>`;
-        }).join('')}
-        <!-- 종료(성공) -->
-        <div style="background:#EDFAF3;border-radius:10px;padding:12px;text-align:center;border:1.5px solid #3DB87E">
-          <div style="font-size:11px;color:#145C3B;font-weight:700;margin-bottom:5px">종료(성공)</div>
-          <div style="font-size:28px;font-weight:800;color:#145C3B">${suc}</div>
+      <!-- 도넛 차트 영역 -->
+      <div style="position:relative;width:130px;height:130px;flex-shrink:0">
+        <canvas id="chart-donut-${num}" width="130" height="130"></canvas>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+          <div style="font-size:22px;font-weight:800;color:var(--t1)">${cGFiltered.length}</div>
+          <div style="font-size:10px;color:var(--t3)">전체</div>
         </div>
-        <!-- 실패+보류 -->
-        <div style="background:#FFF5F5;border-radius:10px;padding:12px;text-align:center;border:1.5px solid #F5C0C0">
-          <div style="font-size:11px;color:#8B0000;font-weight:700;margin-bottom:5px">실패+보류</div>
-          <div style="font-size:28px;font-weight:800;color:#8B0000">${fail}</div>
+      </div>
+
+      <!-- 우측 레전드 + 카운트 -->
+      <div style="flex:1;min-width:180px">
+        <!-- 진행중 3단계 -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;color:var(--t3);margin-bottom:6px;letter-spacing:.5px">진행중</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${inProgressStages.map((s,i)=>{
+              const cols=[['#EEF5FF','#5B8FD6'],['#E8F6FF','#3AAAD4'],['#FFF8EC','#D4880A']];
+              return `<div style="background:${cols[i][0]};border:.5px solid ${cols[i][1]}66;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px">
+                <div style="font-size:9px;color:${cols[i][1]};font-weight:600">${s}</div>
+                <div style="font-size:18px;font-weight:800;color:${cols[i][1]}">${inProgressCnts[i]}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+        <!-- 누적 -->
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--t3);margin-bottom:6px;letter-spacing:.5px">누적(계약·개통)</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${contractedStages.map((s,i)=>{
+              const cols=[['#EDFAF3','#18A068'],['#E0F5EE','#0D8050']];
+              return `<div style="background:${cols[i][0]};border:.5px solid ${cols[i][1]}66;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px">
+                <div style="font-size:9px;color:${cols[i][1]};font-weight:600">${s}</div>
+                <div style="font-size:18px;font-weight:800;color:${cols[i][1]}">${contractedCnts[i]}</div>
+              </div>`;
+            }).join('')}
+            <div style="background:#EDFAF3;border:1.5px solid #3DB87E;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px">
+              <div style="font-size:9px;color:#145C3B;font-weight:700">성공</div>
+              <div style="font-size:18px;font-weight:800;color:#145C3B">${suc}</div>
+            </div>
+            <div style="background:#FFF5F5;border:1.5px solid #F5C0C0;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px">
+              <div style="font-size:9px;color:#8B0000;font-weight:700">실패+보류</div>
+              <div style="font-size:18px;font-weight:800;color:#8B0000">${fail}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1467,7 +1478,33 @@ function renderGroup(num){
     </div>
   </div>`;
 
-  // 월별 실적 차트 제거됨
+  // 도넛 차트
+  setTimeout(()=>{
+    const dId='chart-donut-'+num;
+    if(CM[dId])try{CM[dId].destroy();}catch(e){}
+    const ctx=document.getElementById(dId);
+    if(!ctx)return;
+    const total=cGFiltered.length||1;
+    CM[dId]=new Chart(ctx,{
+      type:'doughnut',
+      data:{
+        labels:['기회인지','제안','견적','계약','개통완료','종료(성공)','실패+보류'],
+        datasets:[{
+          data:[inProgressCnts[0],inProgressCnts[1],inProgressCnts[2],
+                contractedCnts[0],contractedCnts[1],suc,fail],
+          backgroundColor:['#C9B8E8','#7EC8E8','#F5B97A','#7DD4A8','#3AAF7A','#18A068','#E88080'],
+          borderWidth:2,borderColor:'#fff'
+        }]
+      },
+      options:{
+        responsive:false,maintainAspectRatio:false,
+        cutout:'65%',
+        plugins:{legend:{display:false},tooltip:{callbacks:{
+          label:ctx=>ctx.label+': '+ctx.raw+'건'
+        }}}
+      }
+    });
+  },80);
 }
 
 /* =====================================================
