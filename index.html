@@ -1376,14 +1376,17 @@ function renderGroup(num){
   const suc=cGFiltered.filter(r=>r['진행상태']==='종료(성공)').length;
   const fail=cGFiltered.filter(r=>r['진행상태']==='종료(실패)'||r['진행상태']==='보류/연기').length;
 
-  // 계약 Top - 기준월 필터 + 계약시트 금액
+  // 계약 고객사 — 종료(성공)만 기준 (개통완료여도 진행중이면 제외)
   const byC={};
-  cGFiltered.filter(r=>r['진행상태']==='종료(성공)'||r['단계']==='개통완료')
+  cGFiltered
+    .filter(r=>r['진행상태']==='종료(성공)')
     .forEach(r=>{
-      const a=r._displayAmt||n(r['예상매출']||r['예상매출(만)']||0);
-      byC[r['고객사']]=(byC[r['고객사']]||0)+a;
+      const co=(r['고객사']||'').trim();
+      if(!co)return;
+      const a=n(r['예상매출']||r['예상매출(만)']||0);
+      byC[co]=(byC[co]||0)+a;
     });
-  const topC=Object.entries(byC).sort((a,b)=>b[1]-a[1]); // 전체 표시
+  const topC=Object.entries(byC).sort((a,b)=>b[1]-a[1]);
 
   // 담당자별 (기준월 필터 적용)
   const pm={};
