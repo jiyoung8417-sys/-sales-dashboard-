@@ -1464,29 +1464,38 @@ function renderGroup(num){
     </div>
   </div>
 
-  <!-- 담당자 + 계약 Top -->
+  <!-- 담당자 + 계약 고객사 — 행 수 동일하게 맞춤 -->
   <div class="g2">
     <div class="card">
       <div class="ct">담당자별 현황 <span class="ct-note">종료(성공) 높은순</span></div>
       <div class="tw">
         <table>
           <thead><tr><th>담당자</th>${isAll?'<th>그룹</th>':''}<th>전체</th><th>진행중</th><th style="color:var(--teal)">성공</th></tr></thead>
-          <tbody>${Object.entries(pm).sort((a,b)=>b[1].suc-a[1].suc).map(([name,v])=>`
-            <tr><td>${name}</td>${isAll?`<td style="font-size:10px;color:var(--t3)">${v.grp}</td>`:''}
-            <td style="font-weight:600">${v.tot}</td>
-            <td style="color:#C0185A">${v.act}</td>
-            <td style="color:var(--teal);font-weight:700">${v.suc}</td></tr>`).join('')}
+          <tbody>${(()=>{
+            const pmArr=Object.entries(pm).sort((a,b)=>b[1].suc-a[1].suc);
+            return pmArr.map(([name,v])=>`
+              <tr><td>${name}</td>${isAll?`<td style="font-size:10px;color:var(--t3)">${v.grp}</td>`:''}
+              <td style="font-weight:600">${v.tot}</td>
+              <td style="color:#C0185A">${v.act}</td>
+              <td style="color:var(--teal);font-weight:700">${v.suc}</td></tr>`).join('');
+          })()}
           </tbody>
         </table>
       </div>
     </div>
     <div class="card">
-      <div class="ct">계약 고객사 <span class="ct-note" style="color:var(--blue);font-weight:600">${selMonth>0?selMonth+'월':'전체'} · ${topC.length}건</span></div>
-      ${topC.map(([name,amt],i)=>`<div class="rrow">
-        <span class="rn">${i+1}</span>
-        <span class="rnm">${name}</span>
-        <span class="ramt" style="color:var(--teal)">${amt>=10000?(amt/10000).toFixed(1)+'억':amt.toLocaleString()+'만'}</span>
-      </div>`).join('')||nd()}
+      <div class="ct">계약 고객사 <span class="ct-note" style="color:var(--blue);font-weight:600">${selMonth>0?selMonth+'월':'전체'}</span></div>
+      ${(()=>{
+        // 담당자 수와 동일한 수만큼만 표시
+        const pmCount=Object.keys(pm).length;
+        const sliced=topC.slice(0,pmCount);
+        if(!sliced.length)return nd();
+        return sliced.map(([name,amt],i)=>`<div class="rrow">
+          <span class="rn">${i+1}</span>
+          <span class="rnm">${name}</span>
+          <span class="ramt" style="color:var(--teal)">${amt>=1e8?(amt/1e8).toFixed(1)+'억':amt>=1e4?Math.round(amt/1e4).toLocaleString()+'만':amt.toLocaleString()+'만'}</span>
+        </div>`).join('');
+      })()}
     </div>
   </div>`;
 
