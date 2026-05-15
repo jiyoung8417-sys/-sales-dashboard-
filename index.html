@@ -300,9 +300,6 @@ tr:hover td{background:var(--bg)}
   <button class="bn-tab" onclick="goPageM('sales',this)"><span class="bn-icon">📊</span>매출</button>
   <button class="bn-tab" onclick="goPageM('pipeline',this)"><span class="bn-icon">🔁</span>파이프라인</button>
   <button class="bn-tab" onclick="goPageM('group',this)"><span class="bn-icon">👥</span>그룹·현황</button>
-  <button class="bn-tab" onclick="goPageM('weekly',this)"><span class="bn-icon">📰</span>주간보고</button>
-  <button class="bn-tab" onclick="goPageM('activity',this)"><span class="bn-icon">📋</span>활동관리</button>
-  <button class="bn-tab" onclick="goPageM('archive',this)"><span class="bn-icon">📁</span>자료실</button>
 </nav>
 
 <!-- GNB -->
@@ -313,9 +310,6 @@ tr:hover td{background:var(--bg)}
     <div class="gnb-tab" onclick="goPage('sales',this)">매출 현황</div>
     <div class="gnb-tab" onclick="goPage('pipeline',this)">CRM 파이프라인</div>
     <div class="gnb-tab" onclick="goPage('group',this)">그룹 · 현황</div>
-    <div class="gnb-tab" onclick="goPage('weekly',this)">주간 보고</div>
-    <div class="gnb-tab" onclick="goPage('activity',this)">활동 관리</div>
-    <div class="gnb-tab" onclick="goPage('archive',this)">자료실</div>
   </div>
   <div class="gnb-right">
     <span class="gnb-clock" id="clock"></span>
@@ -508,189 +502,6 @@ tr:hover td{background:var(--bg)}
   <div id="grp-body"></div>
 </div>
 
-
-<!-- ===== WEEKLY REPORT ===== -->
-<div class="page" id="page-weekly" style="background:#f9f8f3;font-family:'Noto Serif KR','Georgia',serif">
-  <style>
-    .paper-bg{background:#f9f8f3}
-    .paper-rule{border:none;border-top:2px solid #1a1916;margin:0}
-    .paper-rule-thin{border:none;border-top:.5px solid #1a1916;margin:0}
-    .paper-title{font-family:'Georgia','Noto Serif KR',serif;font-weight:900;font-size:28px;color:#1a1916;letter-spacing:2px}
-    .paper-date{font-size:11px;color:#5a5955;font-family:sans-serif}
-    .article-headline{font-family:'Georgia',serif;font-size:16px;font-weight:700;color:#1a1916;line-height:1.4;margin-bottom:8px;border-bottom:.5px solid #ccc;padding-bottom:8px}
-    .article-body{font-size:12px;color:#3a3835;line-height:1.9;margin-bottom:10px}
-    .kicker{font-size:9px;font-weight:700;color:#888;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
-    .big-num{font-family:'Georgia',serif;font-size:48px;font-weight:900;color:#1a1916;line-height:1}
-    .bullet-item{display:flex;gap:8px;padding:7px 0;border-bottom:.5px solid #ddd;align-items:flex-start;font-size:12px}
-    .bullet-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
-  </style>
-
-  <!-- 마스트헤드 -->
-  <div style="text-align:center;padding:12px 0 8px">
-    <hr class="paper-rule">
-    <div style="padding:10px 0">
-      <div class="paper-title" id="w-title">이번 주 영업 성과 요약</div>
-      <div class="paper-date" id="w-date" style="margin-top:4px"></div>
-    </div>
-    <hr class="paper-rule">
-    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px;color:#888;font-family:sans-serif">
-      <span>영업 KPI 대시보드 · 자동 생성</span>
-      <span id="w-sub"></span>
-    </div>
-    <hr class="paper-rule-thin">
-  </div>
-
-  <!-- 3단 레이아웃 -->
-  <div style="display:grid;grid-template-columns:1fr .5px 1fr .5px 1fr;gap:0;margin-top:12px">
-
-    <!-- 좌측: 수주 목표 달성 분석 -->
-    <div style="padding:0 16px 0 0">
-      <div class="kicker">수주 목표 달성 분석</div>
-      <div class="article-headline" id="w-headline-left">이번 주 영업 실적</div>
-      <div style="margin:12px 0">
-        <div style="font-size:11px;color:#888;margin-bottom:2px">누적 실적</div>
-        <div class="big-num" id="w-total-sales">-</div>
-        <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
-          <span style="font-size:11px;color:#888">달성률</span>
-          <span style="font-size:22px;font-weight:700;font-family:Georgia,serif" id="w-rate">-</span>
-        </div>
-      </div>
-      <div style="height:120px;margin:12px 0"><canvas id="chart-weekly-trend"></canvas></div>
-      <div class="article-body" id="w-analysis-text"></div>
-    </div>
-
-    <!-- 구분선 -->
-    <div style="background:#ddd;width:.5px"></div>
-
-    <!-- 중앙: 시장 트렌드 -->
-    <div style="padding:0 16px">
-      <div class="kicker">그룹별 성과 현황</div>
-      <div class="article-headline">그룹 달성 비교</div>
-      <div style="height:140px;margin:10px 0"><canvas id="chart-weekly-group"></canvas></div>
-      <div class="article-body" id="w-trend-text"></div>
-      <div style="margin-top:12px">
-        <div class="kicker">단계별 파이프라인</div>
-        <div id="w-stage-list" style="margin-top:6px"></div>
-      </div>
-    </div>
-
-    <!-- 구분선 -->
-    <div style="background:#ddd;width:.5px"></div>
-
-    <!-- 우측: 주요 이슈 -->
-    <div style="padding:0 0 0 16px">
-      <div class="kicker">주요 고객사 이슈</div>
-      <div class="article-headline">이번 주 주요 건</div>
-      <div id="w-issues" style="margin-top:6px"></div>
-      <div style="margin-top:16px">
-        <div class="kicker">기한 초과 건</div>
-        <div id="w-overdue" style="margin-top:6px"></div>
-      </div>
-      <div style="margin-top:16px">
-        <div class="kicker">이번 주 신규 등록</div>
-        <div id="w-newreg" style="margin-top:6px"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== ACTIVITY ===== -->
-<div class="page" id="page-activity">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <div>
-      <div style="font-size:16px;font-weight:700;color:var(--t1)">활동 관리</div>
-      <div style="font-size:12px;color:var(--t3);margin-top:2px">보류·실패 건 액션 트래킹</div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <select class="ss" id="act-grp-filter" onchange="renderActivity()">
-        <option value="">그룹 전체</option>
-        <option>1그룹</option><option>2그룹</option><option>3그룹</option>
-      </select>
-      <select class="ss" id="act-person-filter" onchange="renderActivity()">
-        <option value="">담당자 전체</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- 칸반 4컬럼 -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start">
-    <!-- 컬럼 1 -->
-    <div>
-      <div style="background:#FEF3DC;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;font-weight:700;color:#8A5800">보류/실패 접수</span>
-        <span style="font-size:11px;font-weight:700;color:#8A5800;background:#fff;padding:2px 8px;border-radius:20px" id="act-cnt-1">0</span>
-      </div>
-      <div id="act-col-1" style="display:flex;flex-direction:column;gap:8px"></div>
-    </div>
-    <!-- 컬럼 2 -->
-    <div>
-      <div style="background:#E6F1FB;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;font-weight:700;color:#1A56A0">사유 분석</span>
-        <span style="font-size:11px;font-weight:700;color:#1A56A0;background:#fff;padding:2px 8px;border-radius:20px" id="act-cnt-2">0</span>
-      </div>
-      <div id="act-col-2" style="display:flex;flex-direction:column;gap:8px"></div>
-    </div>
-    <!-- 컬럼 3 -->
-    <div>
-      <div style="background:#E8F5E9;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;font-weight:700;color:#1A7A3F">후속 계획 수립</span>
-        <span style="font-size:11px;font-weight:700;color:#1A7A3F;background:#fff;padding:2px 8px;border-radius:20px" id="act-cnt-3">0</span>
-      </div>
-      <div id="act-col-3" style="display:flex;flex-direction:column;gap:8px"></div>
-    </div>
-    <!-- 컬럼 4 -->
-    <div>
-      <div style="background:#F3E5F5;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;font-weight:700;color:#6A1B9A">완료 / 기록</span>
-        <span style="font-size:11px;font-weight:700;color:#6A1B9A;background:#fff;padding:2px 8px;border-radius:20px" id="act-cnt-4">0</span>
-      </div>
-      <div id="act-col-4" style="display:flex;flex-direction:column;gap:8px"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== ARCHIVE ===== -->
-<div class="page" id="page-archive">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <div>
-      <div style="font-size:16px;font-weight:700;color:var(--t1)">자료실</div>
-      <div style="font-size:12px;color:var(--t3);margin-top:2px">영업 자료 공유 및 관리</div>
-    </div>
-    <button onclick="alert('Google Drive 연동 후 업로드 가능합니다.')" style="background:#2E7FD9;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px">
-      ＋ 새 파일 업로드
-    </button>
-  </div>
-
-  <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start">
-    <!-- 좌측 폴더 트리 -->
-    <div class="card" style="padding:12px">
-      <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:10px">폴더</div>
-      <div id="archive-folders"></div>
-    </div>
-
-    <!-- 우측 파일 목록 -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:600;color:var(--t1)" id="archive-folder-title">폴더를 선택하세요</div>
-        <input placeholder="파일명 검색..." oninput="filterArchive(this.value)" style="height:30px;padding:0 10px;font-size:11px;border:.5px solid var(--b2);border-radius:6px;background:var(--bg);color:var(--t1);width:180px">
-      </div>
-      <div class="tw">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:36px">유형</th>
-              <th>파일명</th>
-              <th style="width:100px">수정일</th>
-              <th style="width:80px">작성자</th>
-              <th style="width:80px">액션</th>
-            </tr>
-          </thead>
-          <tbody id="archive-list"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
 <!-- ===== REPORT ===== -->
 <div class="page" id="page-report">
   <div class="rpt-kpi-g" id="rpt-kpi"></div>
@@ -881,9 +692,6 @@ function renderPage(id){
   if(id==='sales')   renderSales();
   if(id==='pipeline')renderPipeline();
   if(id==='group')   renderGroup(curGrp);
-  if(id==='weekly')   renderWeekly();
-  if(id==='activity') renderActivity();
-  if(id==='archive')  renderArchive();
   if(id==='report')  renderReport();
 }
 
@@ -1805,7 +1613,7 @@ function renderReport(){
 /* =====================================================
    PAGE SWITCH
 ===================================================== */
-const PAGE_IDS=['home','sales','pipeline','group','weekly','activity','archive'];
+const PAGE_IDS=['home','sales','pipeline','group'];
 function syncBnav(id){
   document.querySelectorAll('.bn-tab').forEach((b,i)=>b.classList.toggle('active',PAGE_IDS[i]===id));
 }
