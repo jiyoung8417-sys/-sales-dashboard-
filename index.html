@@ -163,14 +163,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Goth
 .srow2{display:flex;gap:4px;margin-bottom:5px;flex-wrap:wrap;align-items:center}
 .sbadge{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:600}
 /* 진행상태 배지 */
-.sb-진행중{background:#E8F4FF;color:#1A6BB0}
-.sb-성공{background:#E0F5EE;color:#0D6B47}
-.sb-실패{background:#FDECEA;color:#9A0000}
-.sb-보류{background:#F5F0FF;color:#5040A0}
+.sb-진행중{background:#1A6BB0;color:#fff}
+.sb-성공{background:#0D8A50;color:#fff}
+.sb-실패{background:#C0180A;color:#fff}
+.sb-보류{background:#7055CC;color:#fff}
 /* 그룹 배지 */
-.sb-g1{background:#E0F5F5;color:#0A7070}
-.sb-g2{background:#D8F5E8;color:#0A6040}
-.sb-g3{background:#FFF0D0;color:#886000}
+.sb-g1{background:#1565C0;color:#fff}
+.sb-g2{background:#2E7D32;color:#fff}
+.sb-g3{background:#E65100;color:#fff}
 
 .cc-title{font-size:14px;font-weight:600;line-height:1.4;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cc-co{font-size:11px;color:var(--t2)}
@@ -296,9 +296,7 @@ tr:hover td{background:var(--bg)}
 
 <!-- 모바일 하단 네비 -->
 <nav class="bottom-nav" id="bnav">
-  <button class="bn-tab active" onclick="goPageM('home',this)"><span class="bn-icon">🏠</span>홈</button>
-  <button class="bn-tab" onclick="goPageM('sales',this)"><span class="bn-icon">📊</span>매출</button>
-  <button class="bn-tab" onclick="goPageM('pipeline',this)"><span class="bn-icon">🔁</span>파이프라인</button>
+  <button class="bn-tab active" onclick="goPageM('pipeline',this)"><span class="bn-icon">🔁</span>파이프라인</button>
   <button class="bn-tab" onclick="goPageM('group',this)"><span class="bn-icon">👥</span>그룹·현황</button>
 </nav>
 
@@ -306,9 +304,7 @@ tr:hover td{background:var(--bg)}
 <nav class="gnb">
   <div class="gnb-logo">영업 KPI</div>
   <div class="gnb-tabs">
-    <div class="gnb-tab active" onclick="goPage('home',this)">홈</div>
-    <div class="gnb-tab" onclick="goPage('sales',this)">매출 현황</div>
-    <div class="gnb-tab" onclick="goPage('pipeline',this)">CRM 파이프라인</div>
+    <div class="gnb-tab active" onclick="goPage('pipeline',this)">CRM 파이프라인</div>
     <div class="gnb-tab" onclick="goPage('group',this)">그룹 · 현황</div>
   </div>
   <div class="gnb-right">
@@ -336,118 +332,8 @@ tr:hover td{background:var(--bg)}
   <button class="mf-btn" data-m="12" onclick="setMonth(12,this)">12월</button>
 </div>
 
-<!-- ===== HOME ===== -->
-<div class="page active" id="page-home">
-
-  <!-- KPI 3카드 (색상 배경) -->
-  <div class="g3">
-    <div class="card kpi-card-blue">
-      <div class="kpi-lbl">연간 누적 실적</div>
-      <div class="kpi-v" id="h-total">-</div>
-      <div class="kpi-sub" id="h-target-txt">-</div>
-      <div class="prog-bar"><div class="prog-fill" id="h-prog" style="width:0%"></div></div>
-    </div>
-    <div class="card kpi-card-teal">
-      <div class="kpi-lbl">달성률</div>
-      <div class="kpi-v" id="h-rate">-</div>
-      <div class="kpi-sub" id="h-rate-sub">-</div>
-      <span class="kpi-b" id="h-rate-b" style="background:rgba(255,255,255,.25);color:#fff">-</span>
-    </div>
-    <div class="card kpi-card-amber">
-      <div class="kpi-lbl" id="h-prog-lbl">연간 진도율</div>
-      <div class="kpi-v" id="h-prog-val">-</div>
-      <div class="kpi-sub" id="h-prog-sub">-</div>
-
-    </div>
-  </div>
-
-  <!-- 차트 전체 폭 -->
-  <div class="card mb">
-    <div class="ct">
-      월별 누적 실적 · 예측 · 목표
-      <div class="leg">
-        <span class="leg-i"><span class="leg-d" style="background:#18A068"></span>실적(확정)</span>
-        <span class="leg-i"><span class="leg-d" style="background:#18A068;opacity:.3;border:1px dashed #18A068"></span>예측</span>
-        <span class="leg-i"><span class="leg-d" style="background:#E8960A;opacity:.7"></span>예상수주</span>
-        <span class="leg-i"><span style="width:16px;height:2px;background:#D93636;display:inline-block;border-radius:1px"></span>목표</span>
-      </div>
-    </div>
-    <div class="cw h260"><canvas id="chart-trend"></canvas></div>
-    <div style="display:flex;margin-top:4px;padding:0 2px" id="trend-rate-badges"></div>
-  </div>
-
-  <!-- 신규 / 해지 -->
-  <div class="nc-wrap" id="nc-wrap">
-    <div class="nc-col" id="nc-new"></div>
-    <div class="nc-col" id="nc-cancel"></div>
-  </div>
-
-  <!-- 예상수주 테이블 -->
-  <div class="card mb">
-    <div class="ct">예상수주 상세 <span class="ct-note">실적 시트 '예상수주' 컬럼 기준</span></div>
-    <div class="tw">
-      <table>
-        <thead><tr><th>월</th><th>그룹</th><th>고객사</th><th>예상수주</th><th>매출구분</th><th>비고</th></tr></thead>
-        <tbody id="fc-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SALES ===== -->
-<div class="page" id="page-sales">
-  <div class="flt-row" id="sf-row">
-    <span style="font-size:11px;color:var(--t3)">그룹:</span>
-    <button class="flt-btn active" data-sg="전체"  onclick="setSF('g','전체',this)">전체</button>
-    <button class="flt-btn" data-sg="1그룹" onclick="setSF('g','1그룹',this)" style="border-color:var(--grp1);color:var(--grp1)">1그룹</button>
-    <button class="flt-btn" data-sg="2그룹" onclick="setSF('g','2그룹',this)" style="border-color:var(--grp2);color:var(--grp2)">2그룹</button>
-    <button class="flt-btn" data-sg="3그룹" onclick="setSF('g','3그룹',this)" style="border-color:var(--grp3);color:var(--grp3)">3그룹</button>
-    <div class="flt-sep"></div>
-    <span style="font-size:11px;color:var(--t3)">구분:</span>
-    <button class="flt-btn active" data-sd="전체"  onclick="setSF('d','전체',this)">전체</button>
-    <button class="flt-btn" data-sd="기업"  onclick="setSF('d','기업',this)">기업</button>
-    <button class="flt-btn" data-sd="글로벌" onclick="setSF('d','글로벌',this)">글로벌</button>
-  </div>
-
-  <!-- KPI 카드 -->
-  <div id="sales-kpi" class="mb"></div>
-
-  <div class="g2">
-    <div class="card">
-      <div class="ct">실적 vs 목표
-        <div class="leg">
-          <span class="leg-i"><span class="leg-d" style="background:#18A068"></span>실적</span>
-          <span class="leg-i"><span class="leg-d" style="background:#E8960A;opacity:.8"></span>예상수주</span>
-          <span class="leg-i"><span style="width:16px;height:2px;background:#D93636;display:inline-block"></span>목표</span>
-        </div>
-      </div>
-      <div class="cw h260"><canvas id="chart-monthly"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="ct">그룹별 월별 실적
-        <div class="leg">
-          <span class="leg-i"><span class="leg-d" style="background:var(--grp1)"></span>1그룹</span>
-          <span class="leg-i"><span class="leg-d" style="background:var(--grp2)"></span>2그룹</span>
-          <span class="leg-i"><span class="leg-d" style="background:var(--grp3)"></span>3그룹</span>
-        </div>
-      </div>
-      <div class="cw h260"><canvas id="chart-grp-stack"></canvas></div>
-    </div>
-  </div>
-  <div class="g2">
-    <div class="card">
-      <div class="ct">달성률 추이 (%)</div>
-      <div class="cw h180"><canvas id="chart-achieve"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="ct">신규 / 해지 현황</div>
-      <div class="cw h180"><canvas id="chart-nc"></canvas></div>
-    </div>
-  </div>
-</div>
-
 <!-- ===== PIPELINE ===== -->
-<div class="page" id="page-pipeline">
+<div class="page active" id="page-pipeline">
   <div class="sbox">
     <div class="srow">
       <input class="si" id="s-text" placeholder="고객사, 영업기회, 담당자 검색..." oninput="applyPF()">
@@ -685,7 +571,7 @@ function mkC(id,type,labels,datasets,opts={}){
 ===================================================== */
 function renderAll(){
   const p=document.querySelector('.page.active');
-  renderPage(p?p.id.replace('page-',''):'home');
+  renderPage(p?p.id.replace('page-',''):'pipeline');
 }
 function renderPage(id){
   if(id==='home')    renderHome();
@@ -1285,13 +1171,16 @@ function mkPCard(d){
   const note=(d['비고']||'').trim();
   const isFR=iF||st==='보류/연기';
 
-  // 금액 포맷
-  const amt=d._displayAmt!=null?d._displayAmt:n(d['예상매출']||d['예상매출(만)']||0);
-  const amtStr=amt>=1e8?(amt/1e8).toFixed(1)+'억':amt>=1e4?Math.round(amt/1e4).toLocaleString()+'만':amt>0?amt.toLocaleString()+'만':'';
+  // 금액 포맷 — 단위 자동감지
+  const _rawAmt=d._displayAmt!=null?d._displayAmt:n(d['예상매출']||d['예상매출(만)']||0);
+  // 예상매출(만) 컬럼이거나, 값이 10000 미만이면 만원 단위로 간주
+  const _isMann=!d._contracted&&(_rawAmt>0&&_rawAmt<10000);
+  const amt=_isMann?_rawAmt*10000:_rawAmt;
+  const amtStr=amt>=1e8?(amt/1e8).toFixed(1)+'억':amt>=1e4?Math.round(amt/1e4).toLocaleString()+'만':amt>0?amt.toLocaleString()+'원':'';
 
   // 단계 컬러바
-  const SC=['#C9B8E8','#7EC8E8','#F5B97A','#7DD4A8','#3AAF7A'];
-  const SD=['#A090CC','#50AACC','#D4904A','#3AAF7A','#1A8A58'];
+  const SC=['#90A8D0','#5BA8C8','#E8904A','#48B890','#1A8858'];
+  const SD=['#6880B0','#3888A8','#C07030','#289870','#0A6840'];
   const stBar='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-radius:5px;overflow:hidden;font-size:10px">'
     +STAGES.map((s,i)=>{
       const lbl=s==='기회인지'?'인지':s==='개통완료'?'개통':s;
@@ -1330,7 +1219,7 @@ function mkPCard(d){
       :'')
     +'<div style="padding:7px 13px;border-top:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center">'
     +'<div>'
-    +'<div class="cmeta">'+(d['시작일']||'')+(d['종료일']?' ~ '+(d['종료일']||'').slice(5):'')+'</div>'
+    +'<div class="cmeta">'+(d['시작일']||'')+(d['종료일']?' ~ '+(d['종료일']||''):'')+'</div>'
     +'<div class="cmeta" style="margin-top:2px">'+prodLine+'</div>'
     +'</div>'
     +'</div>'
@@ -1406,63 +1295,78 @@ function renderGroup(num){
   });
 
   document.getElementById('grp-body').innerHTML=`
-  <!-- 파이프라인 현황 — 세련된 통계 카드 -->
+  <!-- 파이프라인 현황 — 좌:수치강조 / 우:단계별 바 -->
   <div class="card mb">
-    <div class="ct">파이프라인 현황 <span class="ct-note">${grpTitle} ${selMonth>0?selMonth+'월':'전체'} · 총 ${cGFiltered.length}건</span></div>
-    <div style="display:grid;grid-template-columns:160px 1fr;gap:20px;align-items:center">
+    <div class="ct">파이프라인 현황
+      <span class="ct-note">${grpTitle} ${selMonth>0?selMonth+'월':'전체'} · 총 <b style="color:var(--t1);font-size:13px">${cGFiltered.length}</b>건</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
 
-      <!-- 도넛 -->
-      <div style="position:relative;width:160px;height:160px">
-        <canvas id="chart-donut-${num}" width="160" height="160"></canvas>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
-          <div style="font-size:28px;font-weight:800;color:var(--t1);line-height:1">${cGFiltered.length}</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:2px">전체</div>
+      <!-- 좌: 진행중·누적 강조 수치 -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+
+        <!-- 진행중 — 파랑 그라디언트 -->
+        <div style="background:linear-gradient(135deg,#1565C0 0%,#2E7FD9 100%);border-radius:14px;padding:18px;color:#fff;position:relative;overflow:hidden">
+          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.1)"></div>
+          <div style="font-size:12px;font-weight:600;opacity:.85;margin-bottom:2px">진행중</div>
+          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px">${totalInProgress}<span style="font-size:20px;font-weight:500;opacity:.8"> 건</span></div>
+          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.25)">
+            ${inProgressStages.map((s,i)=>{
+              const lbls=['기회인지','제안','견적'];
+              return (i>0?'<div style="width:1px;background:rgba(255,255,255,.25)"></div>':'')+
+                `<div style="flex:1;text-align:center;padding:0 6px">
+                  <div style="font-size:22px;font-weight:800;line-height:1">${inProgressCnts[i]}</div>
+                  <div style="font-size:9px;opacity:.75;margin-top:3px">${lbls[i]}</div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- 누적 — 초록 그라디언트 -->
+        <div style="background:linear-gradient(135deg,#1B5E20 0%,#2E9060 100%);border-radius:14px;padding:18px;color:#fff;position:relative;overflow:hidden">
+          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.1)"></div>
+          <div style="font-size:12px;font-weight:600;opacity:.85;margin-bottom:2px">누적 (계약+개통+성공)</div>
+          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px">${totalContracted+suc}<span style="font-size:20px;font-weight:500;opacity:.8"> 건</span></div>
+          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.25)">
+            ${[['계약',contractedCnts[0]],['개통완료',contractedCnts[1]],['종료성공',suc],['실패+보류',fail]].map(([lbl,cnt],i)=>{
+              return (i>0?'<div style="width:1px;background:rgba(255,255,255,.25)"></div>':'')+
+                `<div style="flex:1;text-align:center;padding:0 6px;${i===3?'opacity:.6':''}">
+                  <div style="font-size:22px;font-weight:800;line-height:1">${cnt}</div>
+                  <div style="font-size:9px;opacity:.75;margin-top:3px">${lbl}</div>
+                </div>`;
+            }).join('')}
+          </div>
         </div>
       </div>
 
-      <!-- 우측 통계 -->
-      <div>
-        <!-- 진행중 행 -->
-        <div style="margin-bottom:12px">
-          <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:6px;display:flex;align-items:center;gap:6px">
-            <span style="width:8px;height:8px;border-radius:50%;background:#5B8FD6;display:inline-block"></span>
-            진행중 <span style="color:#5B8FD6;font-size:13px;font-weight:800">${totalInProgress}건</span>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
-            ${inProgressStages.map((s,i)=>{
-              const bg=[['#EEF5FF','#5B8FD6','#1E4D8C'],['#E0F6FF','#38B0D8','#0A5C7A'],['#FFF8EC','#E8960A','#6B4200']][i];
-              return `<div style="background:${bg[0]};border-radius:10px;padding:10px 6px;text-align:center">
-                <div style="font-size:10px;color:${bg[2]};font-weight:600;margin-bottom:4px">${s}</div>
-                <div style="font-size:26px;font-weight:800;color:${bg[1]};line-height:1">${inProgressCnts[i]}</div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>
-        <!-- 누적 행 -->
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:6px;display:flex;align-items:center;gap:6px">
-            <span style="width:8px;height:8px;border-radius:50%;background:#18A068;display:inline-block"></span>
-            누적 <span style="color:#18A068;font-size:13px;font-weight:800">${totalContracted+suc}건</span>
-            <span style="margin-left:auto;font-size:10px;color:var(--t3)">실패+보류 ${fail}건</span>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
-            ${contractedStages.map((s,i)=>{
-              const bg=[['#EDFAF3','#18A068','#0D5C3B'],['#D8F5EA','#0D9060','#064A30']][i];
-              return `<div style="background:${bg[0]};border-radius:10px;padding:10px 6px;text-align:center">
-                <div style="font-size:10px;color:${bg[2]};font-weight:600;margin-bottom:4px">${s}</div>
-                <div style="font-size:26px;font-weight:800;color:${bg[1]};line-height:1">${contractedCnts[i]}</div>
-              </div>`;
-            }).join('')}
-            <div style="background:#EDFAF3;border:2px solid #3DB87E;border-radius:10px;padding:10px 6px;text-align:center">
-              <div style="font-size:10px;color:#0D5C3B;font-weight:700;margin-bottom:4px">종료성공</div>
-              <div style="font-size:26px;font-weight:800;color:#18A068;line-height:1">${suc}</div>
-            </div>
-            <div style="background:#FFF5F5;border:2px solid #FFAAAA;border-radius:10px;padding:10px 6px;text-align:center">
-              <div style="font-size:10px;color:#8B0000;font-weight:700;margin-bottom:4px">실패+보류</div>
-              <div style="font-size:26px;font-weight:800;color:#CC4444;line-height:1">${fail}</div>
-            </div>
-          </div>
-        </div>
+      <!-- 우: 단계별 가로 바 (값 표기) -->
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:11px">
+        <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:2px">단계별 현황</div>
+        ${(()=>{
+          const allSt=['기회인지','제안','견적','계약','개통완료'];
+          const stC=['#90A8D0','#5BA8C8','#E8904A','#48B890','#1A8858'];
+          const total=cGFiltered.length||1;
+          return allSt.map((s,i)=>{
+            const cnt=cGFiltered.filter(r=>r['단계']===s).length;
+            const pct=Math.round(cnt/total*100);
+            const lbl=s==='기회인지'?'인지':s==='개통완료'?'개통':s;
+            return `<div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span style="font-size:12px;font-weight:600;color:var(--t2)">${lbl}</span>
+                <span style="font-size:13px;font-weight:800;color:${stC[i]}">${cnt}건
+                  <span style="font-size:10px;font-weight:400;color:var(--t3)">&nbsp;${pct}%</span>
+                </span>
+              </div>
+              <div style="height:12px;background:#EEECEA;border-radius:6px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${stC[i]};border-radius:6px;transition:width .6s;display:flex;align-items:center;justify-content:flex-end;padding-right:4px">
+                  ${pct>=12?'<span style="font-size:9px;color:#fff;font-weight:700">'+pct+'%</span>':''}
+                </div>
+              </div>
+            </div>`;
+          }).join('');
+        })()}
+        <!-- 도넛 숨김 (API 유지용) -->
+        <canvas id="chart-donut-${num}" style="display:none" width="0" height="0"></canvas>
       </div>
     </div>
   </div>
@@ -1613,7 +1517,7 @@ function renderReport(){
 /* =====================================================
    PAGE SWITCH
 ===================================================== */
-const PAGE_IDS=['home','sales','pipeline','group'];
+const PAGE_IDS=['pipeline','group'];
 function syncBnav(id){
   document.querySelectorAll('.bn-tab').forEach((b,i)=>b.classList.toggle('active',PAGE_IDS[i]===id));
 }
