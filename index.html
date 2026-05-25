@@ -1306,33 +1306,33 @@ function renderGroup(num){
       <div style="display:flex;flex-direction:column;gap:10px">
 
         <!-- 진행중 — 파랑 그라디언트 -->
-        <div style="background:#E8F4FF;border-radius:14px;padding:18px;color:#1A3A5C;position:relative;overflow:hidden;border:1.5px solid #B0D8F8">
-          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(46,127,217,.08)"></div>
-          <div style="font-size:12px;font-weight:700;color:#2060A8;margin-bottom:2px">진행중</div>
-          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px;color:#1558A8">${totalInProgress}<span style="font-size:20px;font-weight:500;color:#5A88C8"> 건</span></div>
-          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(21,88,168,.15)">
+        <div style="background:#F0EEFF;border-radius:14px;padding:18px;color:#3A2A6C;position:relative;overflow:hidden;border:1.5px solid #C8B8F0">
+          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(120,80,200,.08)"></div>
+          <div style="font-size:12px;font-weight:700;color:#5038A0;margin-bottom:2px">진행중</div>
+          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px;color:#4830A0">${totalInProgress}<span style="font-size:20px;font-weight:500;color:#8060C0"> 건</span></div>
+          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(120,80,200,.18)">
             ${inProgressStages.map((s,i)=>{
               const lbls=['기회인지','제안','견적'];
-              return (i>0?'<div style="width:1px;background:rgba(21,88,168,.15)"></div>':'')+
+              return (i>0?'<div style="width:1px;background:rgba(120,80,200,.18)"></div>':'')+
                 `<div style="flex:1;text-align:center;padding:0 6px">
-                  <div style="font-size:22px;font-weight:800;line-height:1;color:#1558A8">${inProgressCnts[i]}</div>
-                  <div style="font-size:9px;color:#6890C0;margin-top:3px">${lbls[i]}</div>
+                  <div style="font-size:22px;font-weight:800;line-height:1;color:#4830A0">${inProgressCnts[i]}</div>
+                  <div style="font-size:9px;color:#9070C8;margin-top:3px">${lbls[i]}</div>
                 </div>`;
             }).join('')}
           </div>
         </div>
 
         <!-- 누적 — 초록 그라디언트 -->
-        <div style="background:#E6F7F0;border-radius:14px;padding:18px;color:#0A3A20;position:relative;overflow:hidden;border:1.5px solid #A0DCC0">
-          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(24,160,104,.08)"></div>
-          <div style="font-size:12px;font-weight:700;color:#0A7040;margin-bottom:2px">누적 (계약+개통+성공)</div>
-          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px;color:#0A7040">${totalContracted+suc}<span style="font-size:20px;font-weight:500;color:#40A070"> 건</span></div>
-          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(10,112,64,.15)">
+        <div style="background:#FFF2E8;border-radius:14px;padding:18px;color:#5A2A0A;position:relative;overflow:hidden;border:1.5px solid #F0C8A0">
+          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(200,120,60,.08)"></div>
+          <div style="font-size:12px;font-weight:700;color:#C06020;margin-bottom:2px">누적 (계약+개통+성공)</div>
+          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px;color:#C06020">${totalContracted+suc}<span style="font-size:20px;font-weight:500;color:#E08848"> 건</span></div>
+          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(200,120,60,.18)">
             ${[['계약',contractedCnts[0]],['개통완료',contractedCnts[1]],['종료성공',suc],['실패+보류',fail]].map(([lbl,cnt],i)=>{
-              return (i>0?'<div style="width:1px;background:rgba(10,112,64,.15)"></div>':'')+
+              return (i>0?'<div style="width:1px;background:rgba(200,120,60,.18)"></div>':'')+
                 `<div style="flex:1;text-align:center;padding:0 6px">
-                  <div style="font-size:22px;font-weight:800;line-height:1;color:${i===3?'#C05050':'#0A7040'}">${cnt}</div>
-                  <div style="font-size:9px;color:${i===3?'#B07070':'#40A070'};margin-top:3px">${lbl}</div>
+                  <div style="font-size:22px;font-weight:800;line-height:1;color:#C06020">${cnt}</div>
+                  <div style="font-size:9px;color:#E08848;margin-top:3px">${lbl}</div>
                 </div>`;
             }).join('')}
           </div>
