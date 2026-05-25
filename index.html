@@ -1179,16 +1179,16 @@ function mkPCard(d){
   const amtStr=amt>=1e8?(amt/1e8).toFixed(1)+'억':amt>=1e4?Math.round(amt/1e4).toLocaleString()+'만':amt>0?amt.toLocaleString()+'원':'';
 
   // 단계 컬러바
-  const SC=['#90A8D0','#5BA8C8','#E8904A','#48B890','#1A8858'];
-  const SD=['#6880B0','#3888A8','#C07030','#289870','#0A6840'];
+  const STAGE_C=['#A090CC','#4EACC8','#E8904A','#3DB890','#1A9858'];
+  const STAGE_D=STAGE_C; // 완료도 동일 색상 사용
   const stBar='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px;border-radius:5px;overflow:hidden;font-size:10px">'
     +STAGES.map((s,i)=>{
       const lbl=s==='기회인지'?'인지':s==='개통완료'?'개통':s;
-      let bg,tc='#fff',fw='500';
-      if(iF&&i===ci){bg='#E88080';tc='#5A0000';fw='700';}
-      else if(i<ci||(iS&&i===ci)){bg=SD[i];}
-      else if(i===ci){bg=SC[i];tc='#fff';fw='700';}
-      else{bg='#EBEBEB';tc='#B0ADA8';}
+      // 단계별 고정 색상 — 현재/완료 구분 없이 동일
+      let bg,tc='#fff',fw='500',op='1';
+      if(iF&&i===ci){bg='#E07070';tc='#fff';fw='700';}
+      else if(i<=ci||(iS)){bg=STAGE_C[i];fw=(i===ci)?'700':'500';}
+      else{bg='#E8E6E2';tc='#AAAAAA';fw='400';}
       const icon=(i<ci||iS)?'✓ ':i===ci&&iF?'✗ ':'';
       return '<div style="background:'+bg+';color:'+tc+';font-weight:'+fw+';padding:5px 2px;text-align:center">'+icon+lbl+'</div>';
     }).join('')+'</div>';
@@ -1306,33 +1306,33 @@ function renderGroup(num){
       <div style="display:flex;flex-direction:column;gap:10px">
 
         <!-- 진행중 — 파랑 그라디언트 -->
-        <div style="background:linear-gradient(135deg,#1565C0 0%,#2E7FD9 100%);border-radius:14px;padding:18px;color:#fff;position:relative;overflow:hidden">
-          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.1)"></div>
-          <div style="font-size:12px;font-weight:600;opacity:.85;margin-bottom:2px">진행중</div>
-          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px">${totalInProgress}<span style="font-size:20px;font-weight:500;opacity:.8"> 건</span></div>
-          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.25)">
+        <div style="background:linear-gradient(135deg,#B8D4F0 0%,#9EC4E8 100%);border-radius:14px;padding:18px;color:#1A3A5C;position:relative;overflow:hidden;border:.5px solid #90B8E0">
+          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.2)"></div>
+          <div style="font-size:12px;font-weight:700;color:#1A3A5C;margin-bottom:2px">진행중</div>
+          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px;color:#1A3A5C">${totalInProgress}<span style="font-size:20px;font-weight:500;color:#3A6A9C"> 건</span></div>
+          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(26,58,92,.2)">
             ${inProgressStages.map((s,i)=>{
               const lbls=['기회인지','제안','견적'];
-              return (i>0?'<div style="width:1px;background:rgba(255,255,255,.25)"></div>':'')+
+              return (i>0?'<div style="width:1px;background:rgba(26,58,92,.15)"></div>':'')+
                 `<div style="flex:1;text-align:center;padding:0 6px">
-                  <div style="font-size:22px;font-weight:800;line-height:1">${inProgressCnts[i]}</div>
-                  <div style="font-size:9px;opacity:.75;margin-top:3px">${lbls[i]}</div>
+                  <div style="font-size:22px;font-weight:800;line-height:1;color:#1A3A5C">${inProgressCnts[i]}</div>
+                  <div style="font-size:9px;color:#4A7AA0;margin-top:3px">${lbls[i]}</div>
                 </div>`;
             }).join('')}
           </div>
         </div>
 
         <!-- 누적 — 초록 그라디언트 -->
-        <div style="background:linear-gradient(135deg,#1B5E20 0%,#2E9060 100%);border-radius:14px;padding:18px;color:#fff;position:relative;overflow:hidden">
-          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.1)"></div>
-          <div style="font-size:12px;font-weight:600;opacity:.85;margin-bottom:2px">누적 (계약+개통+성공)</div>
-          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px">${totalContracted+suc}<span style="font-size:20px;font-weight:500;opacity:.8"> 건</span></div>
-          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.25)">
+        <div style="background:linear-gradient(135deg,#B0E0C8 0%,#98D4B8 100%);border-radius:14px;padding:18px;color:#0A3A20;position:relative;overflow:hidden;border:.5px solid #80C8A0">
+          <div style="position:absolute;right:-12px;top:-12px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.2)"></div>
+          <div style="font-size:12px;font-weight:700;color:#0A3A20;margin-bottom:2px">누적 (계약+개통+성공)</div>
+          <div style="font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-2px;color:#0A3A20">${totalContracted+suc}<span style="font-size:20px;font-weight:500;color:#2A7A50"> 건</span></div>
+          <div style="display:flex;gap:0;margin-top:12px;padding-top:12px;border-top:1px solid rgba(10,58,32,.2)">
             ${[['계약',contractedCnts[0]],['개통완료',contractedCnts[1]],['종료성공',suc],['실패+보류',fail]].map(([lbl,cnt],i)=>{
-              return (i>0?'<div style="width:1px;background:rgba(255,255,255,.25)"></div>':'')+
-                `<div style="flex:1;text-align:center;padding:0 6px;${i===3?'opacity:.6':''}">
-                  <div style="font-size:22px;font-weight:800;line-height:1">${cnt}</div>
-                  <div style="font-size:9px;opacity:.75;margin-top:3px">${lbl}</div>
+              return (i>0?'<div style="width:1px;background:rgba(10,58,32,.15)"></div>':'')+
+                `<div style="flex:1;text-align:center;padding:0 6px">
+                  <div style="font-size:22px;font-weight:800;line-height:1;color:${i===3?'#A05050':'#0A3A20'}">${cnt}</div>
+                  <div style="font-size:9px;color:${i===3?'#9A6060':'#2A6A40'};margin-top:3px">${lbl}</div>
                 </div>`;
             }).join('')}
           </div>
